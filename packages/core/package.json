@@ -1,0 +1,20 @@
+{
+  "name": "@neto-bastos/core",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.js",
+  "scripts": {
+    "dev": "tsup src/index.ts --watch",
+    "build": "tsup src/index.ts --dts --minify"
+  },
+  "keywords": [],
+  "author": "Wellington Batista",
+  "license": "ISC",
+  "devDependencies": {
+        "tsup": "^8.1.2"
+    },
+    "dependencies": {
+        "typescript": "^5.5.3"
+    }
+}

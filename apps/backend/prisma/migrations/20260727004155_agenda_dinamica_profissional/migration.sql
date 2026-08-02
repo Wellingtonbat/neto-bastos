@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "profissional" ADD COLUMN     "diasTrabalho" INTEGER[] DEFAULT ARRAY[1, 2, 3, 4, 5, 6]::INTEGER[],
+ADD COLUMN     "horaFim" TEXT NOT NULL DEFAULT '19:00',
+ADD COLUMN     "horaInicio" TEXT NOT NULL DEFAULT '08:00',
+ADD COLUMN     "tempoSlotMinutos" INTEGER NOT NULL DEFAULT 15;
