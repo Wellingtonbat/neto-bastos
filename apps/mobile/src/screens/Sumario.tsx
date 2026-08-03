@@ -1,9 +1,31 @@
 import { StyleSheet, Text, Pressable, View } from 'react-native'
 import { DataUtils } from '@neto-bastos/core'
 import useAgendamento from '../data/hooks/useAgendamento'
+import { ActivityIndicator, Alert } from 'react-native'
+import { useState } from 'react'
 
 export default function Sumario({ navigation }: any) {
-    const { data, profissional, servicos, duracaoTotal, precoTotal, agendar } = useAgendamento()
+    const { data, profissional, servicos, duracaoTotal, precoTotal, agendar, carregandoAgendamento } = useAgendamento()
+    const [salvando, setSalvando] = useState(false)
+
+    const resumoCompleto = !!profissional && servicos.length > 0 && !!data
+
+    const valorTotal = precoTotal().toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+    })
+
+    async function finalizarAgendamento() {
+        try {
+            setSalvando(true)
+            await agendar()
+            navigation.navigate('Inicio')
+        } catch (e: any) {
+            Alert.alert('Erro ao salvar agendamento', e?.message ?? 'Nao foi possivel concluir.')
+        } finally {
+            setSalvando(false)
+        }
+    }
 
     return (
         <View style={styles.container}>
@@ -12,7 +34,7 @@ export default function Sumario({ navigation }: any) {
                 <Text style={styles.subtitulo}>Será um prazer atendê-lo!</Text>
 
                 <Text style={styles.label}>PROFISSIONAL</Text>
-                <Text style={styles.valor}>{profissional?.nome}</Text>
+                <Text style={styles.valor}>{profissional?.nome ?? 'Nao selecionado'}</Text>
 
                 <Text style={styles.label}>SERVIÇOS</Text>
                 {servicos.map((s, index) => (
@@ -20,24 +42,30 @@ export default function Sumario({ navigation }: any) {
                         {index + 1}. {s.nome}
                     </Text>
                 ))}
+                {servicos.length === 0 ? <Text style={styles.servico}>Nenhum servico selecionado</Text> : null}
 
                 <Text style={styles.label}>DURAÇÃO</Text>
                 <Text style={styles.valor}>{duracaoTotal()}</Text>
 
                 <Text style={styles.label}>HORÁRIO</Text>
-                <Text style={styles.valor}>{data && DataUtils.formatarData(data)}</Text>
+                <Text style={styles.valor}>{data ? DataUtils.formatarData(data) : 'Nao selecionado'}</Text>
 
                 <Text style={styles.valorTotalLabel}>VALOR TOTAL</Text>
-                <Text style={styles.valorTotal}>R${precoTotal()},00</Text>
+                <Text style={styles.valorTotal}>{valorTotal}</Text>
 
                 <Pressable
-                    style={styles.botao}
-                    onPress={async () => {
-                        await agendar()
-                        navigation.navigate('Inicio')
-                    }}
+                    style={[styles.botao, (!resumoCompleto || salvando || carregandoAgendamento) ? styles.botaoDesabilitado : null]}
+                    onPress={finalizarAgendamento}
+                    disabled={!resumoCompleto || salvando || carregandoAgendamento}
                 >
-                    <Text style={styles.textoBotao}>Finalizar Agendamento</Text>
+                    {salvando || carregandoAgendamento ? (
+                        <View style={styles.loadingInline}>
+                            <ActivityIndicator color="#fff" size="small" />
+                            <Text style={styles.textoBotao}>Salvando...</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.textoBotao}>Finalizar Agendamento</Text>
+                    )}
                 </Pressable>
             </View>
         </View>
@@ -105,9 +133,17 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         marginTop: 30,
     },
+    botaoDesabilitado: {
+        opacity: 0.6,
+    },
     textoBotao: {
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    loadingInline: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
 })

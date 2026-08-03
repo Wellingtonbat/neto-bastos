@@ -1,16 +1,37 @@
-import { ImageBackground, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native'
+import { ImageBackground, RefreshControl, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native'
+import { useCallback, useState } from 'react'
 import UltimosAgendamentos from '../components/agendamento/UltimosAgendamentos'
 
 export default function Inicio() {
+    const [refreshing, setRefreshing] = useState(false)
+    const [refreshToken, setRefreshToken] = useState(0)
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true)
+        setRefreshToken((valor) => valor + 1)
+    }, [])
+
     return (
         <ImageBackground
             source={require('../../assets/inicio/fundo.png')}
             style={styles.imagemDeFundo}
         >
             <SafeAreaView style={styles.areaView}>
-                <ScrollView contentContainerStyle={styles.scrollViewConteudo}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollViewConteudo}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor="#22c55e"
+                        />
+                    }
+                >
                     <View style={styles.view}>
-                        <UltimosAgendamentos />
+                        <UltimosAgendamentos
+                            refreshToken={refreshToken}
+                            onRefreshComplete={() => setRefreshing(false)}
+                        />
                     </View>
                 </ScrollView>
             </SafeAreaView>

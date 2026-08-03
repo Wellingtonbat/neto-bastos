@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Profissional, Servico } from '@neto-bastos/core'
 import useAgendamento from '../data/hooks/useAgendamento'
 import ServicosInput from '../components/agendamento/ServicosInput'
@@ -9,10 +9,12 @@ import DataInput from '../components/agendamento/DataInput'
 
 export default function Agendamentos({ navigation }: any) {
     const [permiteProximoPasso, setPermiteProximoPasso] = useState<boolean>(false)
+    const [navegando, setNavegando] = useState(false)
     const {
         profissional,
         servicos,
         data,
+        carregandoHorarios,
         selecionarProfissional,
         selecionarServicos,
         selecionarData,
@@ -29,12 +31,24 @@ export default function Agendamentos({ navigation }: any) {
         setPermiteProximoPasso(servicos.length > 0)
     }
 
-    function dataMudou(data: Date) {
+    function dataMudou(data: Date | null) {
         selecionarData(data)
+        if (!data) {
+            setPermiteProximoPasso(false)
+            return
+        }
 
-        const temData = data
-        const horaValida = data.getHours() >= 8 && data.getHours() <= 21
-        setPermiteProximoPasso(temData && horaValida)
+        const hora = data.getHours()
+        const minuto = data.getMinutes()
+        const horarioFoiSelecionado = !(hora === 0 && minuto === 0)
+        const horaValida = hora >= 8 && hora <= 21 && minuto % 15 === 0
+        setPermiteProximoPasso(horarioFoiSelecionado && horaValida)
+    }
+
+    async function irParaResumo() {
+        setNavegando(true)
+        navigation.navigate('Sumario')
+        setNavegando(false)
     }
 
     return (
@@ -46,7 +60,7 @@ export default function Agendamentos({ navigation }: any) {
                         labels={['Profissional', 'Serviços', 'Horário']}
                         permiteProximoPasso={permiteProximoPasso}
                         permiteProximoPassoMudou={setPermiteProximoPasso}
-                        finalizar={() => navigation.navigate('Sumario')}
+                        finalizar={irParaResumo}
                     >
                         <ProfissionalInput
                             profissional={profissional}
@@ -57,8 +71,15 @@ export default function Agendamentos({ navigation }: any) {
                             data={data}
                             dataMudou={dataMudou}
                             quantidadeDeSlots={quantidadeDeSlots()}
+                            carregandoHorarios={carregandoHorarios}
                         />
                     </Passos>
+                    {navegando ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator color="#22c55e" size="large" />
+                            <Text style={styles.loadingTexto}>Abrindo resumo...</Text>
+                        </View>
+                    ) : null}
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -85,6 +106,16 @@ const styles = StyleSheet.create({
         fontSize: 30,
         fontWeight: '700',
         textAlign: 'center',
+    },
+    loadingContainer: {
+        marginTop: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+    },
+    loadingTexto: {
+        color: '#e4e4e7',
+        fontSize: 14,
     },
     imagemDeFundo: {
         flex: 1,

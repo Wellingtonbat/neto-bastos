@@ -13,11 +13,13 @@ export default function Passos(props: PassosProps) {
     const [passoAtual, setPassoAtual] = useState(0)
 
     function passoAnterior() {
+        if (passoAtual <= 0) return
         setPassoAtual(passoAtual - 1)
         props.permiteProximoPassoMudou(true)
     }
 
     function proximoPasso() {
+        if (passoAtual >= props.labels.length - 1) return
         setPassoAtual(passoAtual + 1)
         props.permiteProximoPassoMudou(false)
     }
@@ -77,7 +79,7 @@ export default function Passos(props: PassosProps) {
             {renderizarPassos()}
             <View>{props.children?.[passoAtual]}</View>
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
-                {renderizarBotao('Anterior', passoAtual === 0, passoAnterior)}
+                {renderizarBotao('Anterior', passoAtual > 0, passoAnterior)}
                 {renderizarBotao(
                     'Próximo',
                     props.permiteProximoPasso,

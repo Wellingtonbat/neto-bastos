@@ -51,7 +51,7 @@ export default function Principal({ navigation }: any) {
         >
             {tab('Inicio', Inicio, 'Início', 'home-outline')}
             {tab('Agendamento', Agendamento, 'Agendamento', 'calendar-outline')}
-            {tab('Usuario', Usuario, 'Usuário', 'person-outline')}
+            {tab('Usuario', Usuario, 'Adm', 'person-outline')}
         </Tab.Navigator>
     )
 }

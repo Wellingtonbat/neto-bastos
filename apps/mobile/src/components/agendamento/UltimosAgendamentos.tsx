@@ -4,18 +4,40 @@ import useAPI from '../../data/hooks/useAPI'
 import React, { useEffect, useState } from 'react'
 import AgendamentoItem from './AgendamentoItem'
 import useUsuario from '@/src/data/hooks/useUsuario'
+import useAgendamento from '@/src/data/hooks/useAgendamento'
+import { useFocusEffect } from '@react-navigation/native'
 
-export default function UltimosAgendamentos() {
+interface UltimosAgendamentosProps {
+    refreshToken?: number
+    onRefreshComplete?: () => void
+}
+
+export default function UltimosAgendamentos(props: UltimosAgendamentosProps) {
     const [agendamentos, setAgendamentos] = useState<Agendamento[]>()
     const { httpGet } = useAPI()
     const { usuario } = useUsuario()
+    const { versaoAgendamentos } = useAgendamento()
 
     useEffect(() => {
         carregarAgendamentos()
-    }, [usuario])
+    }, [usuario, versaoAgendamentos])
+
+    useFocusEffect(
+        React.useCallback(() => {
+            carregarAgendamentos()
+        }, [usuario?.email])
+    )
+
+    useEffect(() => {
+        if (props.refreshToken === undefined) return
+
+        carregarAgendamentos().finally(() => {
+            props.onRefreshComplete?.()
+        })
+    }, [props.refreshToken])
 
     async function carregarAgendamentos() {
-        if(!usuario?.email) return
+        if (!usuario?.email) return
         const agendamentos = await httpGet(`agendamentos/${usuario?.email}`)
         setAgendamentos(agendamentos)
     }

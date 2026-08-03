@@ -6,7 +6,7 @@ import useAgendamento from '../../data/hooks/useAgendamento'
 interface HorariosInputProps {
     data: Date
     qtdeHorarios: number
-    dataMudou(data: Date): void
+    dataMudou(data: Date | null): void
 }
 
 export default function HorariosInput(props: HorariosInputProps) {

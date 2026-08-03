@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+    ActivityIndicator,
     Alert,
     Image,
     Modal,
@@ -12,6 +13,8 @@ import {
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import useAPI from '@/src/data/hooks/useAPI'
+import { useFocusEffect } from '@react-navigation/native'
+import { URL_BASE } from '@/src/data/constants/ambiente'
 
 type BarbeiroAdmin = {
     id: number
@@ -30,7 +33,7 @@ type VisualizacaoBarbeiros = 'ATIVOS' | 'INATIVOS'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
 const TAMANHO_PAGINA = 5
-const URL_API = 'http://localhost:3001'
+const URL_API = URL_BASE
 
 function mascararTelefone(valor: string) {
     const digitos = valor.replace(/\D/g, '').slice(0, 11)
@@ -133,10 +136,19 @@ export default function GerenciarBarbeiros() {
         }
     }, [httpGet])
 
-    useEffect(() => {
-        carregarBarbeiros()
-        carregarBarbeirosInativos()
+    const carregarDados = useCallback(async () => {
+        await Promise.all([carregarBarbeiros(), carregarBarbeirosInativos()])
     }, [carregarBarbeiros, carregarBarbeirosInativos])
+
+    useEffect(() => {
+        carregarDados()
+    }, [carregarDados])
+
+    useFocusEffect(
+        useCallback(() => {
+            carregarDados()
+        }, [carregarDados])
+    )
 
     useEffect(() => {
         setPaginaAtual(1)
@@ -361,7 +373,12 @@ export default function GerenciarBarbeiros() {
             </View>
 
             {erro ? <Text style={styles.erro}>{erro}</Text> : null}
-            {carregando ? <Text style={styles.info}>Carregando...</Text> : null}
+            {carregando ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator color="#22c55e" size="small" />
+                    <Text style={styles.info}>Carregando...</Text>
+                </View>
+            ) : null}
             {!carregando && barbeirosFiltrados.length === 0 ? (
                 <Text style={styles.info}>
                     {visualizacaoBarbeiros === 'ATIVOS'
@@ -572,6 +589,12 @@ const styles = StyleSheet.create({
     info: {
         color: '#a1a1aa',
         marginTop: 10,
+    },
+    loadingContainer: {
+        marginTop: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
     },
     inputFiltro: {
         marginTop: 12,

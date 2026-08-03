@@ -2,8 +2,8 @@ import { DataUtils } from '@neto-bastos/core'
 import { StyleSheet, Text, Pressable, View } from 'react-native'
 
 export interface DiaInputProps {
-    data: Date
-    dataMudou(data: Date): void
+    data: Date | null
+    dataMudou(data: Date | null): void
 }
 
 export default function DiaInput(props: DiaInputProps) {
@@ -12,13 +12,24 @@ export default function DiaInput(props: DiaInputProps) {
             data.setDate(data.getDate() + 1)
         }
 
-        const selecionado = data.getDate() === props.data.getDate()
+        const selecionado =
+            !!props.data &&
+            data.getDate() === props.data.getDate() &&
+            data.getMonth() === props.data.getMonth() &&
+            data.getFullYear() === props.data.getFullYear()
+
+        const selecionarDia = () => {
+            const diaSelecionado = new Date(data)
+            diaSelecionado.setHours(0, 0, 0, 0)
+            props.dataMudou(diaSelecionado)
+        }
+
         return (
             <View
                 key={data.getTime()}
                 style={{ ...styles.card, backgroundColor: selecionado ? '#fbbf24' : '#18181b' }}
             >
-                <Pressable onPress={() => props.dataMudou(data)}>
+                <Pressable onPress={selecionarDia}>
                     <View style={{ alignItems: 'center' }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Text

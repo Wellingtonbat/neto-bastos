@@ -7,6 +7,13 @@ interface AgendamentoItemProps {
 
 export default function AgendamentoItem(props: AgendamentoItemProps) {
     const cor = new Date(props.agendamento.data).getTime() > Date.now() ? '#007aff' : '#AAAAAA'
+    const status = props.agendamento.status ?? 'PENDENTE'
+
+    function corStatus(valor: string) {
+        if (valor === 'CONFIRMADO') return '#22c55e'
+        if (valor === 'CANCELADO') return '#ef4444'
+        return '#f59e0b'
+    }
 
     function formatarData(data: Date) {
         if (!(data instanceof Date) || isNaN(data.getTime())) {
@@ -47,6 +54,7 @@ export default function AgendamentoItem(props: AgendamentoItemProps) {
                 {props.agendamento.data && formatarHorario(new Date(props.agendamento.data))}
             </Text>
             <Text style={styles.servicos}>{renderizarServicos()}</Text>
+            <Text style={[styles.status, { color: corStatus(status) }]}>Status: {status}</Text>
             <Text style={styles.preco}>{`R$ ${somarTotalServicos()},00`}</Text>
         </View>
     )
@@ -76,6 +84,11 @@ const styles = StyleSheet.create({
     servicos: {
         fontSize: 12,
         color: '#ffffff',
+        marginBottom: 8,
+    },
+    status: {
+        fontSize: 12,
+        fontWeight: '700',
         marginBottom: 8,
     },
     preco: {
