@@ -71,6 +71,7 @@ model Usuario {
   email          String        @unique
   nome           String
   telefone       String?
+  pushToken      String?
   role           RoleUsuario   @default(CLIENTE)
   profissionalId Int?          @unique
   profissional   Profissional? @relation(fields: [profissionalId], references: [id])

@@ -14,7 +14,6 @@ export default function Principal({ navigation }: any) {
                 name={nome}
                 component={componente}
                 options={{
-                    unmountOnBlur: true,
                     tabBarIcon: ({ focused }) => (
                         <View style={styles.tabScreen}>
                             <Icone

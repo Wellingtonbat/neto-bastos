@@ -20,5 +20,11 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "resolutions": {
+    "@babel/traverse": "7.29.8"
+  },
+  "dependencies": {
+    "@babel/helper-hoist-variables": "7.24.7"
+  }
 }

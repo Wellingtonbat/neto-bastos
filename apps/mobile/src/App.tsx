@@ -1,15 +1,25 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { Text, View} from 'react-native'
+import { Text, View } from 'react-native'
 import { ProvedorUsuario } from './data/contexts/ContextoUsuario'
 import { ProvedorAgendamento } from './data/contexts/ContextoAgendamento'
 import { NavigationContainer } from '@react-navigation/native'
 import Cadastro from './screens/Cadastro'
 import Principal from './screens/Principal'
 import Sumario from './screens/Sumario'
+import * as Notifications from 'expo-notifications'
+
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+    }),
+})
 
 const Stack = createNativeStackNavigator()
 
-export default function App(){
+export default function App() {
     return (
         <ProvedorUsuario>
             <ProvedorAgendamento>

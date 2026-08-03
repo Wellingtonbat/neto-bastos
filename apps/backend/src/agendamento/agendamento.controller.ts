@@ -18,17 +18,19 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { PrismaService } from 'src/db/prisma.service';
+import { PushNotificationService } from 'src/notificacao/push-notification.service';
 
 @Controller('agendamentos')
 export class AgendamentoController {
   constructor(
     private readonly repo: AgendamentoRepository,
     private readonly prisma: PrismaService,
+    private readonly push: PushNotificationService,
   ) {}
 
   @Post()
   @UseGuards(AuthGuard)
-  criar(@Req() req: any, @Body() agendamento: Agendamento) {
+  async criar(@Req() req: any, @Body() agendamento: Agendamento) {
     const user = req.user as {
       email: string;
       role: RoleUsuario;
@@ -53,7 +55,10 @@ export class AgendamentoController {
       );
     }
 
-    return this.repo.criar(agendamento);
+    await this.repo.criar(agendamento);
+
+    void this.notificarNovaReserva(agendamento);
+    return { ok: true };
   }
 
   @Get()
@@ -129,7 +134,7 @@ export class AgendamentoController {
   @Patch(':id/status')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
-  atualizarStatus(
+  async atualizarStatus(
     @Req() req: any,
     @Param('id') id: string,
     @Body('status') status: StatusAgendamento,
@@ -149,7 +154,13 @@ export class AgendamentoController {
       return this.atualizarStatusBarbeiro(+id, status, user.profissionalId!);
     }
 
-    return this.repo.atualizarStatus(+id, status);
+    const atualizado = await this.repo.atualizarStatus(+id, status);
+    void this.notificarClienteStatus(
+      atualizado.emailCliente,
+      status,
+      atualizado.id,
+    );
+    return atualizado;
   }
 
   @Delete(':id')
@@ -185,7 +196,81 @@ export class AgendamentoController {
         'Você só pode atualizar agendamentos do seu próprio calendário.',
       );
     }
-    return this.repo.atualizarStatus(agendamentoId, status);
+    const atualizado = await this.repo.atualizarStatus(agendamentoId, status);
+    void this.notificarClienteStatus(
+      atualizado.emailCliente,
+      status,
+      atualizado.id,
+    );
+    return atualizado;
+  }
+
+  private async notificarNovaReserva(agendamento: Agendamento) {
+    const profissionalId = agendamento.profissional?.id;
+    if (!profissionalId) return;
+
+    const [barbeiro, cliente] = await Promise.all([
+      this.prisma.usuario.findFirst({
+        where: { role: RoleUsuario.BARBEIRO, profissionalId },
+        select: { pushToken: true, nome: true },
+      }),
+      this.prisma.usuario.findFirst({
+        where: { email: agendamento.emailCliente },
+        select: { pushToken: true, nome: true },
+      }),
+    ]);
+
+    const dataHora = new Date(agendamento.data).toLocaleString('pt-BR');
+    const qtdServicos = agendamento.servicos?.length ?? 0;
+
+    await this.push.enviarParaTokens(
+      [barbeiro?.pushToken],
+      'Nova reserva recebida',
+      `${cliente?.nome ?? agendamento.emailCliente} reservou para ${dataHora}${qtdServicos ? ` (${qtdServicos} servico(s))` : ''}.`,
+      {
+        tipo: 'NOVA_RESERVA_BARBEIRO',
+        emailCliente: agendamento.emailCliente,
+        profissionalId,
+      },
+    );
+
+    await this.push.enviarParaTokens(
+      [cliente?.pushToken],
+      'Reserva recebida',
+      `Seu agendamento foi criado com sucesso para ${dataHora}.`,
+      {
+        tipo: 'RESERVA_CRIADA_CLIENTE',
+        profissionalId,
+      },
+    );
+  }
+
+  private async notificarClienteStatus(
+    emailCliente: string,
+    status: StatusAgendamento,
+    agendamentoId: number,
+  ) {
+    const cliente = await this.prisma.usuario.findFirst({
+      where: { email: emailCliente },
+      select: { pushToken: true },
+    });
+
+    const statusLabel: Record<StatusAgendamento, string> = {
+      PENDENTE: 'Pendente',
+      CONFIRMADO: 'Confirmado',
+      CANCELADO: 'Cancelado',
+    };
+
+    await this.push.enviarParaTokens(
+      [cliente?.pushToken],
+      'Atualizacao do agendamento',
+      `O status da sua reserva #${agendamentoId} agora e: ${statusLabel[status]}.`,
+      {
+        tipo: 'STATUS_RESERVA_CLIENTE',
+        status,
+        agendamentoId,
+      },
+    );
   }
 
   private async excluirComoBarbeiro(

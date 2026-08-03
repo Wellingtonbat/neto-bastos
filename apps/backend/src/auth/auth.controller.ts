@@ -46,6 +46,18 @@ export class AuthController {
     return this.authService.obterUsuarioAtual(req.user);
   }
 
+  @Patch('me/push-token')
+  @UseGuards(AuthGuard)
+  atualizarPushToken(
+    @Req() req: any,
+    @Body()
+    body: {
+      pushToken?: string | null;
+    },
+  ) {
+    return this.authService.atualizarPushToken(req.user, body.pushToken);
+  }
+
   @Patch('usuarios/:id/role')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleUsuario.DONO)

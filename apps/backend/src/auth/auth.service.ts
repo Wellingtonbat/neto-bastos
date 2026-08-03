@@ -157,6 +157,25 @@ export class AuthService {
     };
   }
 
+  async atualizarPushToken(auth: AuthPayload, pushToken?: string | null) {
+    const tokenNormalizado = (pushToken ?? '').trim();
+
+    return this.prisma.usuario.update({
+      where: { id: auth.id },
+      data: {
+        pushToken: tokenNormalizado || null,
+      },
+      select: {
+        id: true,
+        email: true,
+        nome: true,
+        role: true,
+        profissionalId: true,
+        pushToken: true,
+      },
+    });
+  }
+
   validarToken(token: string): AuthPayload {
     try {
       return jwt.verify(token, this.obterSegredo()) as AuthPayload;

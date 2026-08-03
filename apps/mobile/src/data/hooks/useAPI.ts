@@ -1,7 +1,6 @@
 import { useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const URL_BASE = "http://localhost:3001"; // process.env.URL_BASE
+import { URL_BASE } from "../constants/ambiente";
 
 async function obterHeadersAuth() {
   const headers: Record<string, string> = {};

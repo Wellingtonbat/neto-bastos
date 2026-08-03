@@ -4,6 +4,7 @@ import { ServicoModule } from './servico/servico.module';
 import { AgendamentoModule } from './agendamento/agendamento.module';
 import { AuthModule } from './auth/auth.module';
 import { ProfissionalModule } from './profissional/profissional.module';
+import { NotificacaoModule } from './notificacao/notificacao.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ProfissionalModule } from './profissional/profissional.module';
     AgendamentoModule,
     AuthModule,
     ProfissionalModule,
+    NotificacaoModule,
   ],
   controllers: [],
   providers: [],
