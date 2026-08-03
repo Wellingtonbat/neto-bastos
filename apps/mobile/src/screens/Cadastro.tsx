@@ -1,15 +1,28 @@
 import { TelefoneUtils } from '@neto-bastos/core'
-import { StyleSheet, Text, TextInput, Pressable, View, ImageBackground, Image } from 'react-native'
+import {
+    StyleSheet,
+    Text,
+    TextInput,
+    Pressable,
+    View,
+    ImageBackground,
+    Image,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+} from 'react-native'
 import useUsuario from '../data/hooks/useUsuario'
 import React, { useEffect, useState } from 'react'
 import useFormUsuario from '../data/hooks/useFormUsuario'
 
 export default function Cadastro({ navigation }: any) {
-    
+
     const { usuario } = useUsuario()
     const {
         nome, setNome, email, setEmail, telefone, setTelefone, errors, cadastrar,
     } = useFormUsuario()
+    const [carregando, setCarregando] = useState(false)
 
     useEffect(() => {
         if (usuario) {
@@ -17,61 +30,91 @@ export default function Cadastro({ navigation }: any) {
         }
     }, [usuario])
 
+    async function handleEntrar() {
+        try {
+            setCarregando(true)
+            await cadastrar()
+        } catch (erro: any) {
+            Alert.alert('Erro ao entrar', erro?.message ?? 'Nao foi possivel concluir o login.')
+        } finally {
+            setCarregando(false)
+        }
+    }
+
     return (
         <View style={styles.container}>
             <ImageBackground
                 source={require('../../assets/inicio/fundo.png')}
                 style={styles.imagemDeFundo}
             >
-                <View style={styles.conteudo}>
-                    <Image
-                        source={require('../../assets/inicio/logo-brutal.png')}
-                        style={styles.logo}
-                    />
-                    <Text style={styles.titulo}>🤘 DO CLASSICO AO ROCK 🤘</Text>
-                    <Text style={styles.descricao}>
-                        Cabelo afiado, barba de lenhador e mãos de motoqueiro, tudo ao som de rock
-                        pesado!
-                    </Text>
-                    <View style={styles.formulario}>
-                        <Text style={styles.label}>Nome</Text>
-                        <TextInput
-                            style={[styles.input, errors.nome ? styles.inputError : null]}
-                            placeholder="Digite seu nome"
-                            placeholderTextColor="#666"
-                            value={nome}
-                            onChangeText={setNome}
-                        />
-                        {errors.nome ? <Text style={styles.errorText}>{errors.nome}</Text> : null}
+                <KeyboardAvoidingView
+                    style={styles.keyboardContainer}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                >
+                    <ScrollView
+                        contentContainerStyle={styles.scrollConteudo}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={styles.conteudo}>
+                            <Image
+                                source={require('../../assets/inicio/logo-brutal.png')}
+                                style={styles.logo}
+                            />
+                            <Text style={styles.titulo}>🤘 DO CLASSICO AO ROCK 🤘</Text>
+                            <Text style={styles.descricao}>
+                                Cabelo afiado, barba de lenhador e mãos de motoqueiro, tudo ao som de rock
+                                pesado!
+                            </Text>
+                            <View style={styles.formulario}>
+                                <Text style={styles.label}>Nome</Text>
+                                <TextInput
+                                    style={[styles.input, errors.nome ? styles.inputError : null]}
+                                    placeholder="Digite seu nome"
+                                    placeholderTextColor="#666"
+                                    value={nome}
+                                    onChangeText={setNome}
+                                    returnKeyType="next"
+                                />
+                                {errors.nome ? <Text style={styles.errorText}>{errors.nome}</Text> : null}
 
-                        <Text style={styles.label}>E-mail</Text>
-                        <TextInput
-                            style={[styles.input, errors.email ? styles.inputError : null]}
-                            placeholder="Digite seu e-mail"
-                            placeholderTextColor="#666"
-                            value={email.toLowerCase()}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                        />
-                        {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+                                <Text style={styles.label}>E-mail</Text>
+                                <TextInput
+                                    style={[styles.input, errors.email ? styles.inputError : null]}
+                                    placeholder="Digite seu e-mail"
+                                    placeholderTextColor="#666"
+                                    value={email.toLowerCase()}
+                                    onChangeText={setEmail}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    returnKeyType="next"
+                                />
+                                {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
 
-                        <Text style={styles.label}>Telefone</Text>
-                        <TextInput
-                            style={[styles.input, errors.telefone ? styles.inputError : null]}
-                            placeholder="Digite seu telefone"
-                            placeholderTextColor="#666"
-                            value={TelefoneUtils.formatar(telefone)}
-                            onChangeText={(tel) => setTelefone(TelefoneUtils.desformatar(tel))}
-                            keyboardType="phone-pad"
-                        />
-                        {errors.telefone ? (
-                            <Text style={styles.errorText}>{errors.telefone}</Text>
-                        ) : null}
-                    </View>
-                    <Pressable style={styles.button} onPress={cadastrar}>
-                        <Text style={styles.buttonText}>Entrar</Text>
-                    </Pressable>
-                </View>
+                                <Text style={styles.label}>Telefone</Text>
+                                <TextInput
+                                    style={[styles.input, errors.telefone ? styles.inputError : null]}
+                                    placeholder="Digite seu telefone"
+                                    placeholderTextColor="#666"
+                                    value={TelefoneUtils.formatar(telefone)}
+                                    onChangeText={(tel) => setTelefone(TelefoneUtils.desformatar(tel))}
+                                    keyboardType="phone-pad"
+                                    returnKeyType="done"
+                                    onSubmitEditing={handleEntrar}
+                                />
+                                {errors.telefone ? (
+                                    <Text style={styles.errorText}>{errors.telefone}</Text>
+                                ) : null}
+                            </View>
+                            <Pressable
+                                style={[styles.button, carregando ? styles.buttonDesabilitado : null]}
+                                onPress={handleEntrar}
+                                disabled={carregando}
+                            >
+                                <Text style={styles.buttonText}>{carregando ? 'Entrando...' : 'Entrar'}</Text>
+                            </Pressable>
+                        </View>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             </ImageBackground>
         </View>
     )
@@ -80,6 +123,14 @@ export default function Cadastro({ navigation }: any) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    keyboardContainer: {
+        flex: 1,
+    },
+    scrollConteudo: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        paddingVertical: 20,
     },
     label: {
         color: '#fff',
@@ -115,6 +166,9 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    buttonDesabilitado: {
+        opacity: 0.7,
     },
     buttonText: {
         color: '#fff',
