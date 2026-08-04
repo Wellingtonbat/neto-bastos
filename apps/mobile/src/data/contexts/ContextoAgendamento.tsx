@@ -49,8 +49,9 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
     }
 
     function duracaoTotal() {
+        const minutosPorSlot = profissional?.tempoSlotMinutos ?? 15
         const duracao = servicos.reduce((acc, atual) => {
-            return (acc += atual.qtdeSlots * 15)
+            return (acc += atual.qtdeSlots * minutosPorSlot)
         }, 0)
 
         return `${Math.trunc(duracao / 60)}h ${duracao % 60}m`

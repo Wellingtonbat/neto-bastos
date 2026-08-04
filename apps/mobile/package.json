@@ -9,6 +9,7 @@
     "dev": "expo start --web",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "eas-build-post-install": "cd ../.. && yarn workspace @neto-bastos/core build",
     "test": "jest --watchAll",
     "lint": "expo lint"
   },

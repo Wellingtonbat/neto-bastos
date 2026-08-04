@@ -22,6 +22,7 @@ type Acao =
     | 'ATUALIZAR_STATUS'
     | 'EXCLUIR_AGENDAMENTO'
     | 'CRIAR_SERVICO'
+    | 'SALVAR_SERVICO'
     | 'EXCLUIR_SERVICO'
     | 'SALVAR_AGENDA'
     | null
@@ -77,6 +78,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const [novoPrecoServico, setNovoPrecoServico] = useState('')
     const [novoSlotsServico, setNovoSlotsServico] = useState('1')
     const [novaImagemServico, setNovaImagemServico] = useState('/servicos/corte-de-cabelo.jpg')
+    const [servicoEditandoId, setServicoEditandoId] = useState<number | null>(null)
 
     const [profissionalAgendaId, setProfissionalAgendaId] = useState<string>('')
     const [diasTrabalho, setDiasTrabalho] = useState<number[]>([1, 2, 3, 4, 5, 6])
@@ -95,6 +97,20 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const profissionalAgendaSelecionado = useMemo(() => {
         return profissionais.find((p) => String(p.id) === profissionalAgendaId) ?? null
     }, [profissionais, profissionalAgendaId])
+
+    const minutosPorSlotDisponiveis = useMemo(() => {
+        const valores = profissionais.map((p) => p.tempoSlotMinutos ?? 15)
+        return [...new Set(valores)].sort((a, b) => a - b)
+    }, [profissionais])
+
+    const estimativaDuracaoServico = useMemo(() => {
+        const slots = Number(novoSlotsServico)
+        if (!Number.isInteger(slots) || slots <= 0 || minutosPorSlotDisponiveis.length === 0) {
+            return ''
+        }
+        const duracoes = minutosPorSlotDisponiveis.map((min) => `${slots * min} min`)
+        return `${slots} slot(s) ≈ ${duracoes.join(' / ')} (conforme o profissional)`
+    }, [novoSlotsServico, minutosPorSlotDisponiveis])
 
     const carregarProfissionais = useCallback(async () => {
         const data = await httpGet('profissional')
@@ -195,7 +211,25 @@ export default function PainelAdmin(props: PainelAdminProps) {
         }
     }
 
-    async function criarServico() {
+    function iniciarEdicaoServico(servico: Servico) {
+        setServicoEditandoId(servico.id)
+        setNovoNomeServico(servico.nome)
+        setNovaDescricaoServico(servico.descricao)
+        setNovoPrecoServico(String(servico.preco))
+        setNovoSlotsServico(String(servico.qtdeSlots))
+        setNovaImagemServico(servico.imagemURL)
+    }
+
+    function limparFormularioServico() {
+        setServicoEditandoId(null)
+        setNovoNomeServico('')
+        setNovaDescricaoServico('')
+        setNovoPrecoServico('')
+        setNovoSlotsServico('1')
+        setNovaImagemServico('/servicos/corte-de-cabelo.jpg')
+    }
+
+    async function salvarServico() {
         try {
             const preco = Number(String(novoPrecoServico).replace(',', '.'))
             const qtdeSlots = Number(novoSlotsServico)
@@ -215,25 +249,28 @@ export default function PainelAdmin(props: PainelAdminProps) {
                 return
             }
 
-            setAcao('CRIAR_SERVICO')
-            await httpPost('servico', {
+            const payload = {
                 nome: novoNomeServico.trim(),
                 descricao: novaDescricaoServico.trim(),
                 preco,
                 qtdeSlots,
                 imagemURL: novaImagemServico.trim(),
-            })
+            }
 
-            setNovoNomeServico('')
-            setNovaDescricaoServico('')
-            setNovoPrecoServico('')
-            setNovoSlotsServico('1')
-            setNovaImagemServico('/servicos/corte-de-cabelo.jpg')
+            if (servicoEditandoId) {
+                setAcao('SALVAR_SERVICO')
+                await httpPatch(`servico/${servicoEditandoId}`, payload)
+            } else {
+                setAcao('CRIAR_SERVICO')
+                await httpPost('servico', payload)
+            }
+
+            limparFormularioServico()
 
             await carregarServicos()
-            Alert.alert('Sucesso', 'Servico cadastrado com sucesso.')
+            Alert.alert('Sucesso', servicoEditandoId ? 'Servico atualizado com sucesso.' : 'Servico cadastrado com sucesso.')
         } catch (e: any) {
-            Alert.alert('Erro', e?.message ?? 'Nao foi possivel cadastrar o servico.')
+            Alert.alert('Erro', e?.message ?? 'Nao foi possivel salvar o servico.')
         } finally {
             setAcao(null)
         }
@@ -422,6 +459,9 @@ export default function PainelAdmin(props: PainelAdminProps) {
                         keyboardType="number-pad"
                         style={styles.input}
                     />
+                    {estimativaDuracaoServico ? (
+                        <Text style={styles.dicaTexto}>{estimativaDuracaoServico}</Text>
+                    ) : null}
                     <TextInput
                         placeholder="Imagem URL (/servicos/arquivo.jpg)"
                         placeholderTextColor="#71717a"
@@ -430,9 +470,16 @@ export default function PainelAdmin(props: PainelAdminProps) {
                         style={styles.input}
                     />
 
-                    <Pressable style={styles.botaoPrimario} onPress={criarServico}>
-                        <Text style={styles.botaoPrimarioTexto}>Cadastrar servico</Text>
+                    <Pressable style={styles.botaoPrimario} onPress={salvarServico}>
+                        <Text style={styles.botaoPrimarioTexto}>
+                            {servicoEditandoId ? 'Salvar alteracoes' : 'Cadastrar servico'}
+                        </Text>
                     </Pressable>
+                    {servicoEditandoId ? (
+                        <Pressable style={styles.botaoAcaoDanger} onPress={limparFormularioServico}>
+                            <Text style={styles.botaoAcaoTexto}>Cancelar edicao</Text>
+                        </Pressable>
+                    ) : null}
                 </View>
 
                 {servicos.map((servico) => (
@@ -440,7 +487,10 @@ export default function PainelAdmin(props: PainelAdminProps) {
                         <Text style={styles.cardTitulo}>{servico.nome}</Text>
                         <Text style={styles.cardTexto}>{servico.descricao}</Text>
                         <Text style={styles.cardTexto}>Preco: R$ {Number(servico.preco).toFixed(2)}</Text>
-                        <Text style={styles.cardTexto}>Duracao: {servico.qtdeSlots * 15} min</Text>
+                        <Text style={styles.cardTexto}>Slots: {servico.qtdeSlots}</Text>
+                        <Pressable style={styles.botaoAcao} onPress={() => iniciarEdicaoServico(servico)}>
+                            <Text style={styles.botaoAcaoTexto}>Editar</Text>
+                        </Pressable>
                         <Pressable style={styles.botaoAcaoDanger} onPress={() => excluirServico(servico.id)}>
                             <Text style={styles.botaoAcaoTexto}>Excluir</Text>
                         </Pressable>
@@ -635,6 +685,12 @@ const styles = StyleSheet.create({
     cardTexto: {
         color: '#d4d4d8',
         fontSize: 13,
+    },
+    dicaTexto: {
+        color: '#a1a1aa',
+        fontSize: 12,
+        marginTop: -4,
+        marginBottom: 4,
     },
     acoesRow: {
         marginTop: 6,

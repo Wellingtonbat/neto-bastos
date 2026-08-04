@@ -1,13 +1,25 @@
-import { servicos as todosOsServicos, Servico } from '@neto-bastos/core'
+import { Servico } from '@neto-bastos/core'
 import { Image, StyleSheet, Text, Pressable, View } from 'react-native'
 import imagens from '../../data/constants/imagens'
+import { URL_BASE } from '@/src/data/constants/ambiente'
 
 interface ServicosInputProps {
+    todosServicos: Servico[]
     servicos: Servico[]
     servicosMudou: (servicos: Servico[]) => void
 }
 
 function Opcao(props: { servico: Servico; onClick: (s: Servico) => void; selecionado?: boolean }) {
+    const imagemServico = props.servico.imagemURL
+    const source = imagemServico
+        ? {
+            uri:
+                imagemServico.startsWith('http://') || imagemServico.startsWith('https://')
+                    ? imagemServico
+                    : `${URL_BASE}${imagemServico}`,
+        }
+        : imagens.servicos.find((s) => s.id === props.servico.id)?.imagem
+
     return (
         <View
             key={props.servico.id}
@@ -24,7 +36,7 @@ function Opcao(props: { servico: Servico; onClick: (s: Servico) => void; selecio
                 <View>
                     <Image
                         style={styles.imagemServico}
-                        source={imagens.servicos.find((s) => s.id === props.servico.id)?.imagem}
+                        source={source}
                     />
                     <Text style={styles.textoServico}>{props.servico.nome}</Text>
                 </View>
@@ -34,7 +46,7 @@ function Opcao(props: { servico: Servico; onClick: (s: Servico) => void; selecio
 }
 
 export default function ServicosInput(props: ServicosInputProps) {
-    const { servicos, servicosMudou } = props
+    const { todosServicos, servicos, servicosMudou } = props
 
     function alternarMarcacaoServico(servico: Servico) {
         const encontrado = servicos.find((s) => s.id === servico.id)
@@ -45,7 +57,7 @@ export default function ServicosInput(props: ServicosInputProps) {
 
     return (
         <View style={styles.container}>
-            {todosOsServicos.map((s) => (
+            {todosServicos.map((s) => (
                 <Opcao
                     key={s.id}
                     onClick={alternarMarcacaoServico}

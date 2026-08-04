@@ -11,8 +11,14 @@ interface HorariosInputProps {
 
 export default function HorariosInput(props: HorariosInputProps) {
     const [horaAtual, setHoraAtual] = useState<string | null>(null)
-    const { horariosOcupados } = useAgendamento()
-    const { manha, tarde, noite } = AgendaUtils.horariosDoDia()
+    const { horariosOcupados, profissional } = useAgendamento()
+
+    const horarios = AgendaUtils.horariosPorIntervalo(
+        profissional?.horaInicio ?? '08:00',
+        profissional?.horaFim ?? '19:00',
+        profissional?.tempoSlotMinutos ?? 15
+    )
+    const { manha, tarde, noite } = AgendaUtils.separarPorPeriodo(horarios)
 
     const horaSelecionada = props.data.toLocaleTimeString('pt-BR', {
         hour: '2-digit',

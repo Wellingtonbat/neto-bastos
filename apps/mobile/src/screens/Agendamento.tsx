@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Profissional, Servico } from '@neto-bastos/core'
 import useAgendamento from '../data/hooks/useAgendamento'
@@ -6,10 +6,16 @@ import ServicosInput from '../components/agendamento/ServicosInput'
 import ProfissionalInput from '../components/agendamento/ProfissionalInput'
 import Passos from '../components/agendamento/Passos'
 import DataInput from '../components/agendamento/DataInput'
+import useAPI from '../data/hooks/useAPI'
 
 export default function Agendamentos({ navigation }: any) {
     const [permiteProximoPasso, setPermiteProximoPasso] = useState<boolean>(false)
     const [navegando, setNavegando] = useState(false)
+    const [profissionaisDisponiveis, setProfissionaisDisponiveis] = useState<Profissional[]>([])
+    const [servicosDisponiveis, setServicosDisponiveis] = useState<Servico[]>([])
+    const [carregandoDados, setCarregandoDados] = useState(true)
+    const [erroCarregamento, setErroCarregamento] = useState('')
+    const { httpGet } = useAPI()
     const {
         profissional,
         servicos,
@@ -20,6 +26,37 @@ export default function Agendamentos({ navigation }: any) {
         selecionarData,
         quantidadeDeSlots,
     } = useAgendamento()
+
+    useEffect(() => {
+        let ativo = true
+
+        async function carregarDados() {
+            try {
+                setCarregandoDados(true)
+                setErroCarregamento('')
+                const [profissionaisApi, servicosApi] = await Promise.all([
+                    httpGet('profissional'),
+                    httpGet('servico'),
+                ])
+
+                if (!ativo) return
+                setProfissionaisDisponiveis(profissionaisApi ?? [])
+                setServicosDisponiveis(servicosApi ?? [])
+            } catch (e: any) {
+                if (!ativo) return
+                setErroCarregamento(e?.message ?? 'Nao foi possivel carregar barbeiros e servicos.')
+            } finally {
+                if (!ativo) return
+                setCarregandoDados(false)
+            }
+        }
+
+        carregarDados()
+
+        return () => {
+            ativo = false
+        }
+    }, [httpGet])
 
     function profissionalMudou(profissional: Profissional) {
         selecionarProfissional(profissional)
@@ -62,11 +99,23 @@ export default function Agendamentos({ navigation }: any) {
                         permiteProximoPassoMudou={setPermiteProximoPasso}
                         finalizar={irParaResumo}
                     >
+                        {carregandoDados ? (
+                            <View style={styles.loadingContainer}>
+                                <ActivityIndicator color="#22c55e" size="small" />
+                                <Text style={styles.loadingTexto}>Carregando barbeiros...</Text>
+                            </View>
+                        ) : null}
+                        {erroCarregamento ? <Text style={styles.erroTexto}>{erroCarregamento}</Text> : null}
                         <ProfissionalInput
+                            profissionais={profissionaisDisponiveis}
                             profissional={profissional}
                             profissionalMudou={profissionalMudou}
                         />
-                        <ServicosInput servicos={servicos} servicosMudou={servicosMudou} />
+                        <ServicosInput
+                            todosServicos={servicosDisponiveis}
+                            servicos={servicos}
+                            servicosMudou={servicosMudou}
+                        />
                         <DataInput
                             data={data}
                             dataMudou={dataMudou}
@@ -116,6 +165,11 @@ const styles = StyleSheet.create({
     loadingTexto: {
         color: '#e4e4e7',
         fontSize: 14,
+    },
+    erroTexto: {
+        color: '#f87171',
+        textAlign: 'center',
+        paddingHorizontal: 20,
     },
     imagemDeFundo: {
         flex: 1,
