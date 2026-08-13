@@ -63,7 +63,7 @@ export class AgendamentoController {
 
   @Get()
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO, RoleUsuario.FUNCIONARIO)
   buscarTodos(
     @Req() req: any,
     @Query('profissionalId') profissionalId?: string,

@@ -1,7 +1,6 @@
 import { Profissional } from '@neto-bastos/core'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import imagens from '../../data/constants/imagens'
-import { URL_BASE } from '@/src/data/constants/ambiente'
+import { obterImagem } from '../../data/constants/imagens'
 
 interface ProfissionalInputProps {
     profissionais: Profissional[]
@@ -13,15 +12,7 @@ export default function ProfissionalInput(props: ProfissionalInputProps) {
     const { profissionais, profissional, profissionalMudou } = props
 
     function obterImagemProfissional(p: Profissional) {
-        const imagem = p.imagemUrl
-        if (imagem) {
-            const uri = imagem.startsWith('http://') || imagem.startsWith('https://')
-                ? imagem
-                : `${URL_BASE}${imagem}`
-            return { uri }
-        }
-
-        return imagens.profissionais.find((pr) => pr.id === p.id)?.imagem
+        return obterImagem('profissionais', p.id, p.imagemUrl)
     }
 
     function renderizarProfissional(p: Profissional) {

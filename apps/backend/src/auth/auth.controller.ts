@@ -81,7 +81,13 @@ export class AuthController {
       email: string;
       nome: string;
       telefone?: string;
-      profissionalId: number;
+      role?: RoleUsuario;
+      profissionalId?: number | null;
+      novoProfissional?: {
+        nome: string;
+        descricao: string;
+        imagemUrl: string;
+      };
     },
   ) {
     return this.authService.cadastrarBarbeiro(body);

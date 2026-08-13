@@ -137,7 +137,17 @@ export default function PainelAdmin(props: PainelAdminProps) {
             setCarregando(true)
             setAcao('CARREGANDO')
             setErro('')
-            await Promise.all([carregarAgendamentos(), carregarProfissionais(), carregarServicos()])
+            const resultados = await Promise.allSettled([
+                carregarAgendamentos(),
+                carregarProfissionais(),
+                carregarServicos(),
+            ])
+            const falha = resultados.find((r) => r.status === 'rejected') as
+                | PromiseRejectedResult
+                | undefined
+            if (falha) {
+                setErro(falha.reason?.message ?? 'Nao foi possivel carregar parte do painel admin.')
+            }
         } catch (e: any) {
             setErro(e?.message ?? 'Nao foi possivel carregar o painel admin.')
         } finally {

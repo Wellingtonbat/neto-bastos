@@ -23,7 +23,13 @@ interface CadastrarBarbeiroInput {
   email: string;
   nome: string;
   telefone?: string;
-  profissionalId: number;
+  role?: RoleUsuario;
+  profissionalId?: number | null;
+  novoProfissional?: {
+    nome: string;
+    descricao: string;
+    imagemUrl: string;
+  };
 }
 
 interface AtualizarBarbeiroInput {
@@ -214,36 +220,75 @@ export class AuthService {
   async cadastrarBarbeiro(input: CadastrarBarbeiroInput) {
     const email = (input.email ?? '').trim().toLowerCase();
     const nome = (input.nome ?? '').trim();
-    const profissionalId = Number(input.profissionalId);
+    const role = input.role ?? RoleUsuario.BARBEIRO;
 
     if (!email || !nome) {
-      throw new BadRequestException(
-        'Nome e e-mail do barbeiro sao obrigatorios.',
-      );
+      throw new BadRequestException('Nome e e-mail sao obrigatorios.');
     }
 
-    if (!Number.isInteger(profissionalId) || profissionalId <= 0) {
-      throw new BadRequestException('Profissional informado e invalido.');
+    const rolesValidos: RoleUsuario[] = [
+      RoleUsuario.BARBEIRO,
+      RoleUsuario.DONO,
+      RoleUsuario.FUNCIONARIO,
+    ];
+    if (!rolesValidos.includes(role)) {
+      throw new BadRequestException('Perfil informado e invalido.');
     }
 
-    const profissional = await this.prisma.profissional.findUnique({
-      where: { id: profissionalId },
-      select: { id: true },
-    });
+    // BARBEIRO e DONO sao agendaveis: exigem profissional (existente ou novo).
+    const exigeProfissional =
+      role === RoleUsuario.BARBEIRO || role === RoleUsuario.DONO;
+    let profissionalId: number | null = null;
 
-    if (!profissional) {
-      throw new BadRequestException('Profissional informado não existe.');
-    }
+    if (exigeProfissional) {
+      if (input.profissionalId) {
+        const id = Number(input.profissionalId);
+        if (!Number.isInteger(id) || id <= 0) {
+          throw new BadRequestException('Profissional informado e invalido.');
+        }
+        const profissional = await this.prisma.profissional.findUnique({
+          where: { id },
+          select: { id: true },
+        });
+        if (!profissional) {
+          throw new BadRequestException('Profissional informado não existe.');
+        }
+        profissionalId = id;
+      } else if (input.novoProfissional) {
+        const nomeProf = (input.novoProfissional.nome ?? '').trim();
+        const descricaoProf = (input.novoProfissional.descricao ?? '').trim();
+        const imagemProf = (input.novoProfissional.imagemUrl ?? '').trim();
+        if (!nomeProf || !descricaoProf || !imagemProf) {
+          throw new BadRequestException(
+            'Nome, descricao e imagem do profissional sao obrigatorios.',
+          );
+        }
+        const criado = await this.prisma.profissional.create({
+          data: {
+            nome: nomeProf,
+            descricao: descricaoProf,
+            imagemUrl: imagemProf,
+            avaliacao: 5,
+            quantidadeAvaliacoes: 0,
+          },
+          select: { id: true },
+        });
+        profissionalId = criado.id;
+      } else {
+        throw new BadRequestException(
+          'Vincule a um profissional existente ou informe os dados de um novo.',
+        );
+      }
 
-    const vinculoExistente = await this.prisma.usuario.findFirst({
-      where: { profissionalId },
-      select: { id: true, email: true },
-    });
-
-    if (vinculoExistente && vinculoExistente.email !== email) {
-      throw new BadRequestException(
-        'Este profissional ja esta vinculado a outro usuario.',
-      );
+      const vinculoExistente = await this.prisma.usuario.findFirst({
+        where: { profissionalId },
+        select: { id: true, email: true },
+      });
+      if (vinculoExistente && vinculoExistente.email !== email) {
+        throw new BadRequestException(
+          'Este profissional ja esta vinculado a outro usuario.',
+        );
+      }
     }
 
     let usuario;
@@ -254,13 +299,13 @@ export class AuthService {
           email,
           nome,
           telefone: input.telefone,
-          role: RoleUsuario.BARBEIRO,
+          role,
           profissionalId,
         },
         update: {
           nome,
           telefone: input.telefone,
-          role: RoleUsuario.BARBEIRO,
+          role,
           profissionalId,
         },
       });
@@ -268,7 +313,7 @@ export class AuthService {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new BadRequestException(
-            'Nao foi possivel vincular o barbeiro: profissional ja esta em uso.',
+            'Nao foi possivel vincular: profissional ja esta em uso.',
           );
         }
       }
@@ -304,9 +349,12 @@ export class AuthService {
   async listarBarbeiros() {
     return this.prisma.usuario.findMany({
       where: {
-        role: RoleUsuario.BARBEIRO,
-        profissionalId: {
-          not: null,
+        role: {
+          in: [
+            RoleUsuario.BARBEIRO,
+            RoleUsuario.DONO,
+            RoleUsuario.FUNCIONARIO,
+          ],
         },
       },
       select: {

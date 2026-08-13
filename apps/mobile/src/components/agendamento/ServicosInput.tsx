@@ -1,7 +1,6 @@
 import { Servico } from '@neto-bastos/core'
 import { Image, StyleSheet, Text, Pressable, View } from 'react-native'
-import imagens from '../../data/constants/imagens'
-import { URL_BASE } from '@/src/data/constants/ambiente'
+import { obterImagem } from '../../data/constants/imagens'
 
 interface ServicosInputProps {
     todosServicos: Servico[]
@@ -10,15 +9,7 @@ interface ServicosInputProps {
 }
 
 function Opcao(props: { servico: Servico; onClick: (s: Servico) => void; selecionado?: boolean }) {
-    const imagemServico = props.servico.imagemURL
-    const source = imagemServico
-        ? {
-            uri:
-                imagemServico.startsWith('http://') || imagemServico.startsWith('https://')
-                    ? imagemServico
-                    : `${URL_BASE}${imagemServico}`,
-        }
-        : imagens.servicos.find((s) => s.id === props.servico.id)?.imagem
+    const source = obterImagem('servicos', props.servico.id, props.servico.imagemURL)
 
     return (
         <View

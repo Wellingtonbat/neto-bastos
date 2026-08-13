@@ -19,7 +19,7 @@ export default function Sumario({ navigation }: any) {
         try {
             setSalvando(true)
             await agendar()
-            navigation.navigate('Inicio')
+            navigation.navigate('Principal', { screen: 'Inicio' })
         } catch (e: any) {
             Alert.alert('Erro ao salvar agendamento', e?.message ?? 'Nao foi possivel concluir.')
         } finally {

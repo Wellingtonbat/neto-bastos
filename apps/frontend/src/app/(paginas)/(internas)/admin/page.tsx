@@ -101,6 +101,7 @@ export default function PaginaAdmin() {
     const [clientes, setClientes] = useState<ClienteAdmin[]>([])
     const [barbeiros, setBarbeiros] = useState<BarbeiroAdmin[]>([])
     const [barbeirosInativos, setBarbeirosInativos] = useState<BarbeiroAdmin[]>([])
+    const [erroBarbeiros, setErroBarbeiros] = useState('')
     const [servicos, setServicos] = useState<Servico[]>([])
     const [profissionaisAdmin, setProfissionaisAdmin] = useState<Profissional[]>([])
     const [carregando, setCarregando] = useState(true)
@@ -151,6 +152,9 @@ export default function PaginaAdmin() {
     const [modalBarbeiroAberto, setModalBarbeiroAberto] = useState(false)
     const [barbeiroEditandoId, setBarbeiroEditandoId] = useState<number | null>(null)
     const [profissionalEditandoId, setProfissionalEditandoId] = useState<number | null>(null)
+    const [perfilCadastro, setPerfilCadastro] = useState<'BARBEIRO' | 'DONO' | 'FUNCIONARIO'>('BARBEIRO')
+    const [modoProfissional, setModoProfissional] = useState<'EXISTENTE' | 'NOVO'>('NOVO')
+    const [profissionalVinculadoId, setProfissionalVinculadoId] = useState('')
     const [filtroBarbeiros, setFiltroBarbeiros] = useState('')
     const [paginaBarbeiros, setPaginaBarbeiros] = useState(1)
     const [barbeiroPendenteInativacao, setBarbeiroPendenteInativacao] = useState<BarbeiroAdmin | null>(null)
@@ -158,8 +162,14 @@ export default function PaginaAdmin() {
     const [confirmacaoNomeInativacao, setConfirmacaoNomeInativacao] = useState('')
 
     const podeEntrarNoAdmin = useMemo(() => {
-        return usuario?.role === 'DONO' || usuario?.role === 'BARBEIRO'
+        return (
+            usuario?.role === 'DONO' ||
+            usuario?.role === 'BARBEIRO' ||
+            usuario?.role === 'FUNCIONARIO'
+        )
     }, [usuario?.role])
+
+    const perfilExigeProfissional = perfilCadastro === 'BARBEIRO' || perfilCadastro === 'DONO'
 
     const profissionaisPermitidosAgenda = useMemo(() => {
         if (usuario?.role === 'BARBEIRO') {
@@ -268,9 +278,11 @@ export default function PaginaAdmin() {
         try {
             const data = await httpGet('auth/barbeiros')
             setBarbeiros(data ?? [])
-        } catch {
+            setErroBarbeiros('')
+        } catch (e: any) {
             // Usuarios sem permissao (ex.: BARBEIRO) nao devem quebrar o carregamento do admin.
             setBarbeiros([])
+            setErroBarbeiros(e?.message ?? 'Nao foi possivel carregar os barbeiros.')
         }
     }
 
@@ -546,46 +558,60 @@ export default function PaginaAdmin() {
             setErro('')
             setAcaoCarregando('CADASTRAR_BARBEIRO')
 
-            if (
-                !nomeBarbeiro ||
-                !emailBarbeiro ||
-                !nomeProfissionalCadastro ||
-                !descricaoProfissionalCadastro ||
-                !imagemProfissionalCadastro
-            ) {
-                setErro('Preencha os dados do barbeiro e do profissional.')
+            if (!nomeBarbeiro || !emailBarbeiro) {
+                setErro('Preencha nome e e-mail.')
                 return
             }
 
             if (!EMAIL_REGEX.test(emailBarbeiroNormalizado)) {
-                setErro('Informe um e-mail valido para o barbeiro.')
+                setErro('Informe um e-mail valido.')
                 return
             }
 
             if (erroTelefoneBarbeiro) {
-                setErro('Telefone do barbeiro invalido. Use 10 ou 11 digitos com DDD.')
+                setErro('Telefone invalido. Use 10 ou 11 digitos com DDD.')
                 return
             }
 
-            const profissionalCriado = await httpPost('profissional', {
-                nome: nomeProfissionalCadastro,
-                descricao: descricaoProfissionalCadastro,
-                imagemUrl: imagemProfissionalCadastro,
-            })
-
-            await httpPost('auth/barbeiros', {
+            const payload: any = {
                 nome: nomeBarbeiro,
                 email: emailBarbeiroNormalizado,
                 telefone: telefoneBarbeiroDigitos || undefined,
-                profissionalId: profissionalCriado.id,
-            })
+                role: perfilCadastro,
+            }
+
+            if (perfilExigeProfissional) {
+                if (modoProfissional === 'EXISTENTE') {
+                    if (!profissionalVinculadoId) {
+                        setErro('Selecione um profissional para vincular.')
+                        return
+                    }
+                    payload.profissionalId = Number(profissionalVinculadoId)
+                } else {
+                    if (
+                        !nomeProfissionalCadastro ||
+                        !descricaoProfissionalCadastro ||
+                        !imagemProfissionalCadastro
+                    ) {
+                        setErro('Preencha os dados do novo profissional.')
+                        return
+                    }
+                    payload.novoProfissional = {
+                        nome: nomeProfissionalCadastro,
+                        descricao: descricaoProfissionalCadastro,
+                        imagemUrl: imagemProfissionalCadastro,
+                    }
+                }
+            }
+
+            await httpPost('auth/barbeiros', payload)
 
             limparFormularioBarbeiro()
             setModalBarbeiroAberto(false)
             await carregarProfissionais()
             await carregarBarbeiros()
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel cadastrar barbeiro.')
+            setErro(e?.message ?? 'Nao foi possivel cadastrar.')
         } finally {
             setAcaoCarregando(null)
         }
@@ -600,6 +626,9 @@ export default function PaginaAdmin() {
         setImagemProfissionalCadastro('/profissionais/profissional-1.jpg')
         setBarbeiroEditandoId(null)
         setProfissionalEditandoId(null)
+        setPerfilCadastro('BARBEIRO')
+        setModoProfissional('NOVO')
+        setProfissionalVinculadoId('')
     }
 
     function abrirModalNovoBarbeiro() {
@@ -622,8 +651,8 @@ export default function PaginaAdmin() {
     }
 
     async function salvarEdicaoBarbeiro() {
-        if (!barbeiroEditandoId || !profissionalEditandoId) {
-            setErro('Barbeiro selecionado para edicao e invalido.')
+        if (!barbeiroEditandoId) {
+            setErro('Colaborador selecionado para edicao e invalido.')
             return
         }
 
@@ -631,32 +660,28 @@ export default function PaginaAdmin() {
             setErro('')
             setAcaoCarregando('EDITAR_BARBEIRO')
 
-            if (
-                !nomeBarbeiro ||
-                !emailBarbeiro ||
-                !nomeProfissionalCadastro ||
-                !descricaoProfissionalCadastro ||
-                !imagemProfissionalCadastro
-            ) {
-                setErro('Preencha os dados do barbeiro e do profissional.')
+            if (!nomeBarbeiro || !emailBarbeiro) {
+                setErro('Preencha nome e e-mail.')
                 return
             }
 
             if (!EMAIL_REGEX.test(emailBarbeiroNormalizado)) {
-                setErro('Informe um e-mail valido para o barbeiro.')
+                setErro('Informe um e-mail valido.')
                 return
             }
 
             if (erroTelefoneBarbeiro) {
-                setErro('Telefone do barbeiro invalido. Use 10 ou 11 digitos com DDD.')
+                setErro('Telefone invalido. Use 10 ou 11 digitos com DDD.')
                 return
             }
 
-            await httpPatch(`profissional/${profissionalEditandoId}`, {
-                nome: nomeProfissionalCadastro,
-                descricao: descricaoProfissionalCadastro,
-                imagemUrl: imagemProfissionalCadastro,
-            })
+            if (profissionalEditandoId) {
+                await httpPatch(`profissional/${profissionalEditandoId}`, {
+                    nome: nomeProfissionalCadastro,
+                    descricao: descricaoProfissionalCadastro,
+                    imagemUrl: imagemProfissionalCadastro,
+                })
+            }
 
             await httpPatch(`auth/barbeiros/${barbeiroEditandoId}`, {
                 nome: nomeBarbeiro,
@@ -668,7 +693,7 @@ export default function PaginaAdmin() {
             setModalBarbeiroAberto(false)
             await Promise.all([carregarProfissionais(), carregarBarbeiros()])
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel editar barbeiro.')
+            setErro(e?.message ?? 'Nao foi possivel editar colaborador.')
         } finally {
             setAcaoCarregando(null)
         }
@@ -1290,6 +1315,10 @@ export default function PaginaAdmin() {
                             </p>
                         ) : null}
 
+                        {erroBarbeiros ? (
+                            <p className="text-red-400 text-sm">{erroBarbeiros}</p>
+                        ) : null}
+
                         <input
                             value={filtroBarbeiros}
                             onChange={(e) => setFiltroBarbeiros(e.target.value)}
@@ -1443,7 +1472,7 @@ export default function PaginaAdmin() {
                                 <div className="w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-zinc-800 border border-zinc-700 rounded-lg p-5 space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-lg font-bold text-zinc-100">
-                                            {barbeiroEditandoId ? 'Editar barbeiro' : 'Cadastrar barbeiro'}
+                                            {barbeiroEditandoId ? 'Editar colaborador' : 'Cadastrar colaborador'}
                                         </h3>
                                         <button
                                             className="button bg-zinc-700"
@@ -1495,64 +1524,127 @@ export default function PaginaAdmin() {
                                         </div>
                                     </div>
 
-                                    <div className="border-t border-zinc-700 pt-4 space-y-4">
-                                        <h4 className="text-zinc-100 font-semibold">Dados do profissional</h4>
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                            <div className="flex flex-col gap-1">
-                                                <label className="text-xs uppercase text-zinc-400">Nome de exibicao</label>
-                                                <input
-                                                    value={nomeProfissionalCadastro}
-                                                    onChange={(e) => setNomeProfissionalCadastro(e.target.value)}
-                                                    placeholder="Ex.: Neto Maos de Fada"
-                                                    className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
-                                                />
+                                    {!barbeiroEditandoId ? (
+                                        <div className="border-t border-zinc-700 pt-4 space-y-2">
+                                            <label className="text-xs uppercase text-zinc-400">Perfil</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(['BARBEIRO', 'FUNCIONARIO', 'DONO'] as const).map((perfil) => (
+                                                    <button
+                                                        key={perfil}
+                                                        type="button"
+                                                        onClick={() => setPerfilCadastro(perfil)}
+                                                        className={`button ${perfilCadastro === perfil ? 'bg-blue-700' : 'bg-zinc-700'}`}
+                                                    >
+                                                        {perfil === 'BARBEIRO' ? 'Barbeiro' : perfil === 'FUNCIONARIO' ? 'Funcionario' : 'Dono'}
+                                                    </button>
+                                                ))}
                                             </div>
-
-                                            <div className="flex flex-col gap-1">
-                                                <label className="text-xs uppercase text-zinc-400">Imagem (URL)</label>
-                                                <input
-                                                    value={imagemProfissionalCadastro}
-                                                    onChange={(e) => setImagemProfissionalCadastro(e.target.value)}
-                                                    placeholder="/profissionais/profissional-x.jpg"
-                                                    className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
-                                                />
-                                            </div>
-
-                                            <div className="flex flex-col gap-2 lg:col-span-2">
-                                                <label className="text-xs uppercase text-zinc-400">Upload da imagem</label>
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={uploadImagemProfissional}
-                                                    className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
-                                                />
-                                                {carregandoUploadProfissionalCadastro ? (
-                                                    <p className="text-xs text-blue-300">Carregando imagem...</p>
-                                                ) : null}
-                                            </div>
+                                            {perfilCadastro === 'FUNCIONARIO' ? (
+                                                <p className="text-xs text-zinc-400">Funcionario tem acesso limitado (apenas visualiza agendamentos) e nao precisa de profissional.</p>
+                                            ) : null}
                                         </div>
+                                    ) : null}
 
-                                        <div className="flex flex-col gap-1">
-                                            <label className="text-xs uppercase text-zinc-400">Descricao do profissional</label>
-                                            <textarea
-                                                value={descricaoProfissionalCadastro}
-                                                onChange={(e) => setDescricaoProfissionalCadastro(e.target.value)}
-                                                placeholder="Descricao do barbeiro para exibicao no site"
-                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
-                                            />
+                                    {barbeiroEditandoId || perfilExigeProfissional ? (
+                                        <div className="border-t border-zinc-700 pt-4 space-y-4">
+                                            <h4 className="text-zinc-100 font-semibold">Profissional</h4>
+
+                                            {!barbeiroEditandoId ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setModoProfissional('NOVO')}
+                                                        className={`button ${modoProfissional === 'NOVO' ? 'bg-blue-700' : 'bg-zinc-700'}`}
+                                                    >
+                                                        Criar novo
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setModoProfissional('EXISTENTE')}
+                                                        className={`button ${modoProfissional === 'EXISTENTE' ? 'bg-blue-700' : 'bg-zinc-700'}`}
+                                                    >
+                                                        Vincular existente
+                                                    </button>
+                                                </div>
+                                            ) : null}
+
+                                            {!barbeiroEditandoId && modoProfissional === 'EXISTENTE' ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-xs uppercase text-zinc-400">Profissional existente</label>
+                                                    <select
+                                                        value={profissionalVinculadoId}
+                                                        onChange={(e) => setProfissionalVinculadoId(e.target.value)}
+                                                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                                    >
+                                                        <option value="">Selecione o profissional</option>
+                                                        {profissionaisAdmin.map((p) => (
+                                                            <option key={p.id} value={p.id}>
+                                                                {p.nome}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                                        <div className="flex flex-col gap-1">
+                                                            <label className="text-xs uppercase text-zinc-400">Nome de exibicao</label>
+                                                            <input
+                                                                value={nomeProfissionalCadastro}
+                                                                onChange={(e) => setNomeProfissionalCadastro(e.target.value)}
+                                                                placeholder="Ex.: Neto Maos de Fada"
+                                                                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                                            />
+                                                        </div>
+
+                                                        <div className="flex flex-col gap-1">
+                                                            <label className="text-xs uppercase text-zinc-400">Imagem (URL)</label>
+                                                            <input
+                                                                value={imagemProfissionalCadastro}
+                                                                onChange={(e) => setImagemProfissionalCadastro(e.target.value)}
+                                                                placeholder="/profissionais/profissional-x.jpg"
+                                                                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                                            />
+                                                        </div>
+
+                                                        <div className="flex flex-col gap-2 lg:col-span-2">
+                                                            <label className="text-xs uppercase text-zinc-400">Upload da imagem</label>
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                onChange={uploadImagemProfissional}
+                                                                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                                            />
+                                                            {carregandoUploadProfissionalCadastro ? (
+                                                                <p className="text-xs text-blue-300">Carregando imagem...</p>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col gap-1">
+                                                        <label className="text-xs uppercase text-zinc-400">Descricao do profissional</label>
+                                                        <textarea
+                                                            value={descricaoProfissionalCadastro}
+                                                            onChange={(e) => setDescricaoProfissionalCadastro(e.target.value)}
+                                                            placeholder="Descricao do barbeiro para exibicao no site"
+                                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                                        />
+                                                    </div>
+
+                                                    {imagemProfissionalCadastro ? (
+                                                        <div className="relative h-36 w-full max-w-sm overflow-hidden rounded border border-zinc-700">
+                                                            <Image
+                                                                src={imagemProfissionalCadastro}
+                                                                alt="Preview profissional"
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        </div>
+                                                    ) : null}
+                                                </>
+                                            )}
                                         </div>
-
-                                        {imagemProfissionalCadastro ? (
-                                            <div className="relative h-36 w-full max-w-sm overflow-hidden rounded border border-zinc-700">
-                                                <Image
-                                                    src={imagemProfissionalCadastro}
-                                                    alt="Preview profissional"
-                                                    fill
-                                                    className="object-cover"
-                                                />
-                                            </div>
-                                        ) : null}
-                                    </div>
+                                    ) : null}
 
                                     <button
                                         onClick={barbeiroEditandoId ? salvarEdicaoBarbeiro : cadastrarBarbeiroCompleto}
@@ -1564,11 +1656,11 @@ export default function PaginaAdmin() {
                                     >
                                         {barbeiroEditandoId
                                             ? acaoCarregando === 'EDITAR_BARBEIRO'
-                                                ? 'Salvando barbeiro...'
+                                                ? 'Salvando...'
                                                 : 'Salvar alteracoes'
                                             : acaoCarregando === 'CADASTRAR_BARBEIRO'
-                                                ? 'Cadastrando barbeiro...'
-                                                : 'Cadastrar barbeiro'}
+                                                ? 'Cadastrando...'
+                                                : 'Cadastrar colaborador'}
                                     </button>
                                 </div>
                             </div>

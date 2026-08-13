@@ -23,6 +23,7 @@ enum RoleUsuario {
   CLIENTE
   BARBEIRO
   DONO
+  FUNCIONARIO
 }
 
 model Profissional {

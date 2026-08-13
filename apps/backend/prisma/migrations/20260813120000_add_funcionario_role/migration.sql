@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "RoleUsuario" ADD VALUE 'FUNCIONARIO';

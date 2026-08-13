@@ -1,4 +1,4 @@
-export type RoleUsuario = "CLIENTE" | "BARBEIRO" | "DONO";
+export type RoleUsuario = "CLIENTE" | "BARBEIRO" | "DONO" | "FUNCIONARIO";
 
 export default interface Usuario {
   email: string;

@@ -93,19 +93,19 @@ export default function Agendamentos({ navigation }: any) {
             <ScrollView contentContainerStyle={{ paddingVertical: 20 }}>
                 <View style={styles.container}>
                     <Text style={styles.titulo}>Agende seu horário</Text>
+                    {carregandoDados ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator color="#22c55e" size="small" />
+                            <Text style={styles.loadingTexto}>Carregando barbeiros...</Text>
+                        </View>
+                    ) : null}
+                    {erroCarregamento ? <Text style={styles.erroTexto}>{erroCarregamento}</Text> : null}
                     <Passos
                         labels={['Profissional', 'Serviços', 'Horário']}
                         permiteProximoPasso={permiteProximoPasso}
                         permiteProximoPassoMudou={setPermiteProximoPasso}
                         finalizar={irParaResumo}
                     >
-                        {carregandoDados ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator color="#22c55e" size="small" />
-                                <Text style={styles.loadingTexto}>Carregando barbeiros...</Text>
-                            </View>
-                        ) : null}
-                        {erroCarregamento ? <Text style={styles.erroTexto}>{erroCarregamento}</Text> : null}
                         <ProfissionalInput
                             profissionais={profissionaisDisponiveis}
                             profissional={profissional}

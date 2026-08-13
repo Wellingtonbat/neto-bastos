@@ -116,9 +116,15 @@ const styles = StyleSheet.create({
     },
     logo: {
         marginTop: 20,
+        width: 200,
+        height: 90,
+        resizeMode: 'contain',
     },
     garotoPropaganda: {
         marginBottom: 20,
         marginTop: 20,
+        width: 240,
+        height: 240,
+        resizeMode: 'contain',
     },
 })

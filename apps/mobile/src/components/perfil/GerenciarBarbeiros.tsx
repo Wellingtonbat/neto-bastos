@@ -51,6 +51,7 @@ export default function GerenciarBarbeiros() {
 
     const [barbeiros, setBarbeiros] = useState<BarbeiroAdmin[]>([])
     const [barbeirosInativos, setBarbeirosInativos] = useState<BarbeiroAdmin[]>([])
+    const [profissionais, setProfissionais] = useState<{ id: number; nome: string }[]>([])
     const [erro, setErro] = useState('')
     const [carregando, setCarregando] = useState(false)
     const [carregandoUploadImagem, setCarregandoUploadImagem] = useState(false)
@@ -68,6 +69,11 @@ export default function GerenciarBarbeiros() {
     const [nomeProfissional, setNomeProfissional] = useState('')
     const [descricaoProfissional, setDescricaoProfissional] = useState('')
     const [imagemProfissional, setImagemProfissional] = useState('/profissionais/profissional-1.jpg')
+    const [perfilCadastro, setPerfilCadastro] = useState<'BARBEIRO' | 'DONO' | 'FUNCIONARIO'>('BARBEIRO')
+    const [modoProfissional, setModoProfissional] = useState<'EXISTENTE' | 'NOVO'>('NOVO')
+    const [profissionalVinculadoId, setProfissionalVinculadoId] = useState<number | null>(null)
+
+    const perfilExigeProfissional = perfilCadastro === 'BARBEIRO' || perfilCadastro === 'DONO'
 
     const emailNormalizado = emailBarbeiro.trim().toLowerCase()
     const telefoneDigitos = telefoneBarbeiro.replace(/\D/g, '')
@@ -136,9 +142,22 @@ export default function GerenciarBarbeiros() {
         }
     }, [httpGet])
 
+    const carregarProfissionais = useCallback(async () => {
+        try {
+            const data = await httpGet('profissional')
+            setProfissionais(data ?? [])
+        } catch {
+            setProfissionais([])
+        }
+    }, [httpGet])
+
     const carregarDados = useCallback(async () => {
-        await Promise.all([carregarBarbeiros(), carregarBarbeirosInativos()])
-    }, [carregarBarbeiros, carregarBarbeirosInativos])
+        await Promise.all([
+            carregarBarbeiros(),
+            carregarBarbeirosInativos(),
+            carregarProfissionais(),
+        ])
+    }, [carregarBarbeiros, carregarBarbeirosInativos, carregarProfissionais])
 
     useEffect(() => {
         carregarDados()
@@ -169,6 +188,9 @@ export default function GerenciarBarbeiros() {
         setImagemProfissional('/profissionais/profissional-1.jpg')
         setBarbeiroEditandoId(null)
         setProfissionalEditandoId(null)
+        setPerfilCadastro('BARBEIRO')
+        setModoProfissional('NOVO')
+        setProfissionalVinculadoId(null)
     }
 
     function abrirNovo() {
@@ -192,8 +214,8 @@ export default function GerenciarBarbeiros() {
         try {
             setErro('')
 
-            if (!nomeBarbeiro || !emailBarbeiro || !nomeProfissional || !descricaoProfissional || !imagemProfissional) {
-                setErro('Preencha os dados do barbeiro e do profissional.')
+            if (!nomeBarbeiro || !emailBarbeiro) {
+                setErro('Preencha nome e e-mail.')
                 return
             }
 
@@ -208,12 +230,14 @@ export default function GerenciarBarbeiros() {
             }
 
             setCarregando(true)
-            if (barbeiroEditandoId && profissionalEditandoId) {
-                await httpPatch(`profissional/${profissionalEditandoId}`, {
-                    nome: nomeProfissional,
-                    descricao: descricaoProfissional,
-                    imagemUrl: imagemProfissional,
-                })
+            if (barbeiroEditandoId) {
+                if (profissionalEditandoId) {
+                    await httpPatch(`profissional/${profissionalEditandoId}`, {
+                        nome: nomeProfissional,
+                        descricao: descricaoProfissional,
+                        imagemUrl: imagemProfissional,
+                    })
+                }
 
                 await httpPatch(`auth/barbeiros/${barbeiroEditandoId}`, {
                     nome: nomeBarbeiro,
@@ -221,25 +245,47 @@ export default function GerenciarBarbeiros() {
                     telefone: telefoneDigitos || undefined,
                 })
             } else {
-                const profissionalCriado = await httpPost('profissional', {
-                    nome: nomeProfissional,
-                    descricao: descricaoProfissional,
-                    imagemUrl: imagemProfissional,
-                })
-
-                await httpPost('auth/barbeiros', {
+                const payload: any = {
                     nome: nomeBarbeiro,
                     email: emailNormalizado,
                     telefone: telefoneDigitos || undefined,
-                    profissionalId: profissionalCriado.id,
-                })
+                    role: perfilCadastro,
+                }
+
+                if (perfilExigeProfissional) {
+                    if (modoProfissional === 'EXISTENTE') {
+                        if (!profissionalVinculadoId) {
+                            setErro('Selecione um profissional para vincular.')
+                            setCarregando(false)
+                            return
+                        }
+                        payload.profissionalId = profissionalVinculadoId
+                    } else {
+                        if (!nomeProfissional || !descricaoProfissional || !imagemProfissional) {
+                            setErro('Preencha os dados do novo profissional.')
+                            setCarregando(false)
+                            return
+                        }
+                        payload.novoProfissional = {
+                            nome: nomeProfissional,
+                            descricao: descricaoProfissional,
+                            imagemUrl: imagemProfissional,
+                        }
+                    }
+                }
+
+                await httpPost('auth/barbeiros', payload)
             }
 
             setModalAberto(false)
             limparFormulario()
-            await Promise.all([carregarBarbeiros(), carregarBarbeirosInativos()])
+            await Promise.all([
+                carregarBarbeiros(),
+                carregarBarbeirosInativos(),
+                carregarProfissionais(),
+            ])
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel salvar barbeiro.')
+            setErro(e?.message ?? 'Nao foi possivel salvar colaborador.')
         } finally {
             setCarregando(false)
         }
@@ -451,10 +497,10 @@ export default function GerenciarBarbeiros() {
             <Modal animationType="slide" visible={modalAberto} onRequestClose={() => setModalAberto(false)}>
                 <ScrollView style={styles.modal} contentContainerStyle={styles.modalConteudo}>
                     <Text style={styles.modalTitulo}>
-                        {barbeiroEditandoId ? 'Editar barbeiro' : 'Cadastrar barbeiro'}
+                        {barbeiroEditandoId ? 'Editar colaborador' : 'Cadastrar colaborador'}
                     </Text>
 
-                    <Text style={styles.label}>Nome do barbeiro</Text>
+                    <Text style={styles.label}>Nome</Text>
                     <TextInput
                         style={styles.input}
                         value={nomeBarbeiro}
@@ -488,46 +534,110 @@ export default function GerenciarBarbeiros() {
                         <Text style={styles.erroCampo}>Telefone invalido. Informe DDD + numero.</Text>
                     ) : null}
 
-                    <Text style={styles.label}>Nome de exibicao</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={nomeProfissional}
-                        onChangeText={setNomeProfissional}
-                        placeholder="Nome do profissional"
-                        placeholderTextColor="#888"
-                    />
+                    {!barbeiroEditandoId ? (
+                        <>
+                            <Text style={styles.label}>Perfil</Text>
+                            <View style={styles.chipsRow}>
+                                {(['BARBEIRO', 'FUNCIONARIO', 'DONO'] as const).map((perfil) => (
+                                    <Pressable
+                                        key={perfil}
+                                        onPress={() => setPerfilCadastro(perfil)}
+                                        style={[styles.chip, perfilCadastro === perfil ? styles.chipAtivo : null]}
+                                    >
+                                        <Text style={styles.chipTexto}>
+                                            {perfil === 'BARBEIRO' ? 'Barbeiro' : perfil === 'FUNCIONARIO' ? 'Funcionario' : 'Dono'}
+                                        </Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                            {perfilCadastro === 'FUNCIONARIO' ? (
+                                <Text style={styles.erroCampo}>
+                                    Funcionario so visualiza agendamentos e nao precisa de profissional.
+                                </Text>
+                            ) : null}
+                        </>
+                    ) : null}
 
-                    <Text style={styles.label}>Descricao</Text>
-                    <TextInput
-                        style={[styles.input, styles.textArea]}
-                        value={descricaoProfissional}
-                        onChangeText={setDescricaoProfissional}
-                        multiline
-                        placeholder="Descricao para exibicao"
-                        placeholderTextColor="#888"
-                    />
+                    {barbeiroEditandoId || perfilExigeProfissional ? (
+                        <>
+                            {!barbeiroEditandoId ? (
+                                <View style={styles.chipsRow}>
+                                    <Pressable
+                                        onPress={() => setModoProfissional('NOVO')}
+                                        style={[styles.chip, modoProfissional === 'NOVO' ? styles.chipAtivo : null]}
+                                    >
+                                        <Text style={styles.chipTexto}>Criar novo</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={() => setModoProfissional('EXISTENTE')}
+                                        style={[styles.chip, modoProfissional === 'EXISTENTE' ? styles.chipAtivo : null]}
+                                    >
+                                        <Text style={styles.chipTexto}>Vincular existente</Text>
+                                    </Pressable>
+                                </View>
+                            ) : null}
 
-                    <Text style={styles.label}>Imagem (URL)</Text>
-                    <TextInput
-                        style={styles.input}
-                        value={imagemProfissional}
-                        onChangeText={setImagemProfissional}
-                        placeholder="/profissionais/profissional-x.jpg"
-                        placeholderTextColor="#888"
-                    />
+                            {!barbeiroEditandoId && modoProfissional === 'EXISTENTE' ? (
+                                <>
+                                    <Text style={styles.label}>Profissional existente</Text>
+                                    <View style={styles.chipsRow}>
+                                        {profissionais.map((p) => (
+                                            <Pressable
+                                                key={p.id}
+                                                onPress={() => setProfissionalVinculadoId(p.id)}
+                                                style={[styles.chip, profissionalVinculadoId === p.id ? styles.chipAtivo : null]}
+                                            >
+                                                <Text style={styles.chipTexto}>{p.nome}</Text>
+                                            </Pressable>
+                                        ))}
+                                    </View>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={styles.label}>Nome de exibicao</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={nomeProfissional}
+                                        onChangeText={setNomeProfissional}
+                                        placeholder="Nome do profissional"
+                                        placeholderTextColor="#888"
+                                    />
 
-                    <Pressable
-                        style={[styles.botaoUpload, carregandoUploadImagem ? styles.botaoUploadDesabilitado : null]}
-                        onPress={selecionarEEnviarImagem}
-                        disabled={carregandoUploadImagem || carregando}
-                    >
-                        <Text style={styles.textoBotaoUpload}>
-                            {carregandoUploadImagem ? 'Enviando imagem...' : 'Escolher imagem da galeria'}
-                        </Text>
-                    </Pressable>
+                                    <Text style={styles.label}>Descricao</Text>
+                                    <TextInput
+                                        style={[styles.input, styles.textArea]}
+                                        value={descricaoProfissional}
+                                        onChangeText={setDescricaoProfissional}
+                                        multiline
+                                        placeholder="Descricao para exibicao"
+                                        placeholderTextColor="#888"
+                                    />
 
-                    {imagemPreviewProfissional ? (
-                        <Image source={{ uri: imagemPreviewProfissional }} style={styles.previewImagem} />
+                                    <Text style={styles.label}>Imagem (URL)</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={imagemProfissional}
+                                        onChangeText={setImagemProfissional}
+                                        placeholder="/profissionais/profissional-x.jpg"
+                                        placeholderTextColor="#888"
+                                    />
+
+                                    <Pressable
+                                        style={[styles.botaoUpload, carregandoUploadImagem ? styles.botaoUploadDesabilitado : null]}
+                                        onPress={selecionarEEnviarImagem}
+                                        disabled={carregandoUploadImagem || carregando}
+                                    >
+                                        <Text style={styles.textoBotaoUpload}>
+                                            {carregandoUploadImagem ? 'Enviando imagem...' : 'Escolher imagem da galeria'}
+                                        </Text>
+                                    </Pressable>
+
+                                    {imagemPreviewProfissional ? (
+                                        <Image source={{ uri: imagemPreviewProfissional }} style={styles.previewImagem} />
+                                    ) : null}
+                                </>
+                            )}
+                        </>
                     ) : null}
 
                     <View style={styles.modalAcoes}>
@@ -724,6 +834,27 @@ const styles = StyleSheet.create({
     erroCampo: {
         color: '#f87171',
         marginTop: 6,
+    },
+    chipsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    chip: {
+        borderWidth: 1,
+        borderColor: '#2e2e2e',
+        backgroundColor: '#171717',
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+    },
+    chipAtivo: {
+        backgroundColor: '#2563eb',
+        borderColor: '#3b82f6',
+    },
+    chipTexto: {
+        color: '#e4e4e7',
+        fontSize: 13,
     },
     textArea: {
         minHeight: 90,
