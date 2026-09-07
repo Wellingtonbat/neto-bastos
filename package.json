@@ -17,10 +17,15 @@
     "node": ">=18"
   },
   "packageManager": "yarn@1.22.22",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "nohoist": [
+      "mobile/**"
+    ]
+  },
   "resolutions": {
     "@babel/traverse": "7.29.8"
   },

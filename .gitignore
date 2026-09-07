@@ -5,6 +5,13 @@ node_modules
 .pnp
 .pnp.js
 
+# O projeto usa Yarn (packageManager em package.json); lockfiles de outros
+# gerenciadores nao devem ser versionados para evitar arvores de node_modules
+# divergentes/duplicadas entre workspaces.
+package-lock.json
+apps/*/package-lock.json
+packages/*/package-lock.json
+
 # Local env files
 .env
 .env.local
