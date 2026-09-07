@@ -1,5 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Agendamento, RepositorioAgendamento } from '@neto-bastos/core';
+import {
+  Agendamento,
+  DataUtils,
+  RepositorioAgendamento,
+} from '@neto-bastos/core';
 import { PrismaService } from 'src/db/prisma.service';
 import { StatusAgendamento } from '@prisma/client';
 
@@ -142,7 +146,7 @@ export class AgendamentoRepository implements RepositorioAgendamento {
     }
 
     const data = new Date(agendamento.data);
-    const diaSemana = data.getDay();
+    const { hora, minuto, diaSemana } = DataUtils.horaNoFuso(data);
     if (!profissional.diasTrabalho.includes(diaSemana)) {
       throw new BadRequestException(
         'Profissional nao atende no dia selecionado.',
@@ -156,7 +160,7 @@ export class AgendamentoRepository implements RepositorioAgendamento {
     const inicioJanela = horaInicio * 60 + minutoInicio;
     const fimJanela = horaFim * 60 + minutoFim;
 
-    const minutosSelecionados = data.getHours() * 60 + data.getMinutes();
+    const minutosSelecionados = hora * 60 + minuto;
     if (
       minutosSelecionados < inicioJanela ||
       minutosSelecionados >= fimJanela

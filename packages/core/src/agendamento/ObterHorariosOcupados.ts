@@ -1,4 +1,5 @@
 import { TEMPO_SLOT } from "../constants";
+import DataUtils from "../utils/DataUtils";
 import RepositorioAgendamento from "./RepositorioAgendamento";
 
 export default class ObterHorariosOcupados {
@@ -31,7 +32,7 @@ export default class ObterHorariosOcupados {
         );
         return [...horariosOcupados, ...horarios];
       }, [])
-      .map((d) => d.toTimeString().slice(0, 5));
+      .map((d) => DataUtils.horaMinutoNoFuso(d));
 
     return dados; // [ '10:00', '10:15', '10:30', '10:45', '14:15' ]
   }
