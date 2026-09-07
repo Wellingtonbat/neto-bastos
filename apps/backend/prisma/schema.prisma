@@ -67,6 +67,15 @@ model Agendamento {
   @@map("agendamento")
 }
 
+model Imagem {
+  id       Int      @id @default(autoincrement())
+  mimeType String
+  dados    Bytes
+  criadoEm DateTime @default(now())
+
+  @@map("imagem")
+}
+
 model Usuario {
   id             Int           @id @default(autoincrement())
   email          String        @unique

@@ -133,16 +133,21 @@ export class AgendamentoController {
 
   @Patch(':id/status')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO, RoleUsuario.CLIENTE)
   async atualizarStatus(
     @Req() req: any,
     @Param('id') id: string,
     @Body('status') status: StatusAgendamento,
   ) {
     const user = req.user as {
+      email: string;
       role: RoleUsuario;
       profissionalId: number | null;
     };
+
+    if (user.role === RoleUsuario.CLIENTE) {
+      return this.cancelarComoCliente(+id, status, user.email);
+    }
 
     if (user.role === RoleUsuario.BARBEIRO && !user.profissionalId) {
       throw new ForbiddenException(
@@ -183,6 +188,27 @@ export class AgendamentoController {
     }
 
     return this.repo.excluir(+id);
+  }
+
+  private async cancelarComoCliente(
+    agendamentoId: number,
+    status: StatusAgendamento,
+    email: string,
+  ) {
+    if (status !== StatusAgendamento.CANCELADO) {
+      throw new ForbiddenException(
+        'Cliente só pode cancelar o próprio agendamento.',
+      );
+    }
+
+    const agendamento = await this.repo.buscarPorId(agendamentoId);
+    if (!agendamento || agendamento.emailCliente !== email) {
+      throw new ForbiddenException(
+        'Você só pode cancelar seus próprios agendamentos.',
+      );
+    }
+
+    return this.repo.atualizarStatus(agendamentoId, StatusAgendamento.CANCELADO);
   }
 
   private async atualizarStatusBarbeiro(

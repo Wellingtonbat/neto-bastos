@@ -18,9 +18,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import * as fs from 'fs';
-import * as path from 'path';
+import { memoryStorage } from 'multer';
 
 interface AtualizarAgendaInput {
   diasTrabalho: number[];
@@ -50,22 +48,7 @@ export class ProfissionalController {
   @Roles(RoleUsuario.DONO)
   @UseInterceptors(
     FileInterceptor('arquivo', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => {
-          const pasta = path.resolve(
-            process.cwd(),
-            '../frontend/public/profissionais',
-          );
-          fs.mkdirSync(pasta, { recursive: true });
-          cb(null, pasta);
-        },
-        filename: (_req, file, cb) => {
-          const extensao =
-            path.extname(file.originalname || '').toLowerCase() || '.jpg';
-          const nome = `profissional-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${extensao}`;
-          cb(null, nome);
-        },
-      }),
+      storage: memoryStorage(),
       limits: { fileSize: 5 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
@@ -76,13 +59,21 @@ export class ProfissionalController {
       },
     }),
   )
-  uploadImagem(@UploadedFile() arquivo?: any) {
+  async uploadImagem(@UploadedFile() arquivo?: any) {
     if (!arquivo) {
       throw new BadRequestException('Arquivo de imagem nao enviado.');
     }
 
+    const imagem = await this.prisma.imagem.create({
+      data: {
+        mimeType: arquivo.mimetype,
+        dados: arquivo.buffer,
+      },
+      select: { id: true },
+    });
+
     return {
-      imagemUrl: `/profissionais/${arquivo.filename}`,
+      imagemUrl: `/imagens/${imagem.id}`,
     };
   }
 

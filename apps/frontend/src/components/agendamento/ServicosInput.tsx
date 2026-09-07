@@ -1,6 +1,7 @@
 import useServicos from '@/data/hooks/useServicos'
 import { Servico } from '@neto-bastos/core'
 import Image from 'next/image'
+import { resolverImagemUrl } from '@/lib/imagem'
 
 export interface ServicosInputProps {
     servicos: Servico[]
@@ -15,7 +16,7 @@ function Opcao(props: { servico: Servico; onClick: (s: Servico) => void; selecio
             onClick={() => props.onClick(props.servico)}
         >
             <Image
-                src={props.servico.imagemURL}
+                src={resolverImagemUrl(props.servico.imagemURL)}
                 alt={props.servico.nome}
                 width={150}
                 height={120}

@@ -17,27 +17,11 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import * as fs from 'fs';
-import * as path from 'path';
+import { memoryStorage } from 'multer';
 
 @Controller('servico')
 export class ServicoController {
   constructor(private readonly prisma: PrismaService) {}
-
-  private readonly pastaServicos = path.resolve(
-    process.cwd(),
-    '../frontend/public/servicos',
-  );
-
-  private garantirPastaServicos() {
-    fs.mkdirSync(this.pastaServicos, { recursive: true });
-  }
-
-  private gerarNomeArquivo(originalname: string) {
-    const extensao = path.extname(originalname || '').toLowerCase() || '.jpg';
-    return `servico-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${extensao}`;
-  }
 
   @Get()
   buscarTodos() {
@@ -49,22 +33,7 @@ export class ServicoController {
   @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
   @UseInterceptors(
     FileInterceptor('arquivo', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => {
-          const pasta = path.resolve(
-            process.cwd(),
-            '../frontend/public/servicos',
-          );
-          fs.mkdirSync(pasta, { recursive: true });
-          cb(null, pasta);
-        },
-        filename: (_req, file, cb) => {
-          const extensao =
-            path.extname(file.originalname || '').toLowerCase() || '.jpg';
-          const nome = `servico-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${extensao}`;
-          cb(null, nome);
-        },
-      }),
+      storage: memoryStorage(),
       limits: { fileSize: 5 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
@@ -75,15 +44,21 @@ export class ServicoController {
       },
     }),
   )
-  uploadImagem(@UploadedFile() arquivo?: any) {
-    this.garantirPastaServicos();
-
+  async uploadImagem(@UploadedFile() arquivo?: any) {
     if (!arquivo) {
       throw new BadRequestException('Arquivo de imagem nao enviado.');
     }
 
+    const imagem = await this.prisma.imagem.create({
+      data: {
+        mimeType: arquivo.mimetype,
+        dados: arquivo.buffer,
+      },
+      select: { id: true },
+    });
+
     return {
-      imagemURL: `/servicos/${arquivo.filename}`,
+      imagemURL: `/imagens/${imagem.id}`,
     };
   }
 

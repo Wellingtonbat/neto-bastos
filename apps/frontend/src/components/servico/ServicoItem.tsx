@@ -1,5 +1,6 @@
 import { Servico } from '@neto-bastos/core'
 import Image from 'next/image'
+import { resolverImagemUrl } from '@/lib/imagem'
 
 export interface ServicoItemProps {
     servico: Servico
@@ -16,7 +17,7 @@ export default function ServicoItem(props: ServicoItemProps) {
             onClick={() => props.onClick?.(props.servico)}
         >
             <Image
-                src={props.servico.imagemURL}
+                src={resolverImagemUrl(props.servico.imagemURL)}
                 width={150}
                 height={150}
                 alt={props.servico.nome}

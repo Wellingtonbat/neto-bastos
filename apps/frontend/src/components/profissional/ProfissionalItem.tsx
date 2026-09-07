@@ -7,6 +7,7 @@ import {
 import { Profissional } from '@neto-bastos/core'
 import Image from 'next/image'
 import Avaliacao from '../shared/Avaliacao'
+import { resolverImagemUrl } from '@/lib/imagem'
 
 export interface ProfissionalItemProps {
     profissional: Profissional
@@ -22,7 +23,7 @@ export default function ProfissionalItem(props: ProfissionalItemProps) {
         >
             <div className="relative h-72 w-full">
                 <Image
-                    src={props.profissional.imagemUrl}
+                    src={resolverImagemUrl(props.profissional.imagemUrl)}
                     fill
                     alt={props.profissional.nome}
                     className="object-cover object-top rounded-t-lg"

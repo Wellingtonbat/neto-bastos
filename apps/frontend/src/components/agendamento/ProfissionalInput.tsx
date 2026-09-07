@@ -1,6 +1,7 @@
 import useProfissionais from '@/data/hooks/useProfissionais'
 import { Profissional } from '@neto-bastos/core'
 import Image from 'next/image'
+import { resolverImagemUrl } from '@/lib/imagem'
 
 export interface ProfissionalInputProps {
     profissional: Profissional | null
@@ -21,7 +22,7 @@ function Opcao(props: {
             onClick={() => props.onClick(props.profissional)}
         >
             <Image
-                src={props.profissional.imagemUrl}
+                src={resolverImagemUrl(props.profissional.imagemUrl)}
                 alt={props.profissional.nome}
                 width={150}
                 height={150}

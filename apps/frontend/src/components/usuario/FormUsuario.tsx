@@ -7,10 +7,14 @@ import useUsuario from '@/data/hooks/useUsuario'
 import Logo from '@/components/shared/Logo'
 import Image from 'next/image'
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
+
 export default function FormUsuario() {
     const [nome, setNome] = useState('')
     const [email, setEmail] = useState('')
     const [telefone, setTelefone] = useState('')
+    const [erro, setErro] = useState('')
+    const [enviando, setEnviando] = useState(false)
 
     const { usuario, entrar, entrarComGoogle } = useUsuario()
     const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
@@ -23,6 +27,31 @@ export default function FormUsuario() {
             router.push(dest ? dest : '/meus-agendamentos')
         }
     }, [usuario, router, params])
+
+    async function entrarComValidacao() {
+        const nomeAparado = nome.trim()
+        const emailAparado = email.trim()
+
+        if (!nomeAparado || !emailAparado) {
+            setErro('Preencha nome e e-mail.')
+            return
+        }
+
+        if (!EMAIL_REGEX.test(emailAparado)) {
+            setErro('Informe um e-mail válido.')
+            return
+        }
+
+        try {
+            setErro('')
+            setEnviando(true)
+            await entrar({ nome: nomeAparado, email: emailAparado, telefone })
+        } catch (e: any) {
+            setErro(e?.message ?? 'Não foi possível entrar.')
+        } finally {
+            setEnviando(false)
+        }
+    }
 
     return (
         <div className="flex justify-center items-center h-screen relative">
@@ -58,12 +87,16 @@ export default function FormUsuario() {
                             placeholder="Telefone"
                             className="bg-zinc-900 px-4 py-2 rounded"
                         />
+                        {erro ? (
+                            <p className="text-sm text-red-400">{erro}</p>
+                        ) : null}
                         <div className="flex gap-5">
                             <button
-                                onClick={() => entrar({ nome, email, telefone })}
-                                className="button bg-green-600 flex-1"
+                                onClick={entrarComValidacao}
+                                disabled={enviando}
+                                className="button bg-green-600 flex-1 disabled:opacity-60"
                             >
-                                Entrar
+                                {enviando ? 'Entrando...' : 'Entrar'}
                             </button>
                             <button
                                 onClick={() => {

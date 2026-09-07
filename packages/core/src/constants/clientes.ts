@@ -25,7 +25,7 @@ const clientes = [
         imagemURL: '/clientes/cliente-4.jpg',
         nome: 'Sr. Carlos',
         testemunho:
-            'Nosso cliente mais velho e cheio de histórias incríveis que nunca se repetem! Ele anima a barbearia com suas aventuras e sabedoria. Sr. Carlos diz: "A Barba Brutal é raiz, me lembra a barbearia que eu ia quando era moleque. Serviço excelente e histórias boas garantidas"',
+            'Nosso cliente mais velho e cheio de histórias incríveis que nunca se repetem! Ele anima a barbearia com suas aventuras e sabedoria. Sr. Carlos diz: "A Neto Bastos é raiz, me lembra a barbearia que eu ia quando era moleque. Serviço excelente e histórias boas garantidas"',
     },
 ]
 
