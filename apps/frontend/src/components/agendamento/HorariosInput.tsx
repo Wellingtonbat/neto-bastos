@@ -100,13 +100,13 @@ export default function HorariosInput(props: HorariosInputProps) {
             ) : null}
             <div className="flex flex-col gap-3 select-none">
                 <span className="text-xs uppercase text-zinc-400">Manhã</span>
-                <div className="grid grid-cols-8 gap-1">{manha.map(renderizarHorario)}</div>
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1">{manha.map(renderizarHorario)}</div>
 
                 <span className="text-xs uppercase text-zinc-400">Tarde</span>
-                <div className="grid grid-cols-8 gap-1">{tarde.map(renderizarHorario)}</div>
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1">{tarde.map(renderizarHorario)}</div>
 
                 <span className="text-xs uppercase text-zinc-400">Noite</span>
-                <div className="grid grid-cols-8 gap-1">{noite.map(renderizarHorario)}</div>
+                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1">{noite.map(renderizarHorario)}</div>
             </div>
         </div>
     )

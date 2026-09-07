@@ -64,7 +64,7 @@ export default function FormUsuario() {
                 "
             >
                 <Logo />
-                <div className="flex flex-col w-1/5 gap-5">
+                <div className="flex flex-col w-[85%] max-w-sm gap-5">
                     <div className="flex flex-col gap-4 rounded">
                         <input
                             type="text"

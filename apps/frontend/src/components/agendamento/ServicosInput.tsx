@@ -49,7 +49,7 @@ export default function ServicosInput(props: ServicosInputProps) {
     return (
         <div className="flex flex-col gap-5">
             <span className="text-sm uppercase text-zinc-400">Serviços Disponíveis</span>
-            <div className="grid grid-cols-3 self-start gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 self-start gap-5">
                 {todosServicos.map((servico) => (
                     <Opcao
                         key={servico.id}

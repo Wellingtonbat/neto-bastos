@@ -185,6 +185,9 @@ const styles = StyleSheet.create({
     logo: {
         marginTop: 20,
         marginBottom: 20,
+        width: 160,
+        height: 144,
+        resizeMode: 'contain',
     },
     conteudo: {
         alignItems: 'center',
