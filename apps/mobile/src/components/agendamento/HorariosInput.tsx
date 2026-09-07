@@ -27,6 +27,17 @@ export default function HorariosInput(props: HorariosInputProps) {
         minute: '2-digit',
     })
 
+    const agora = new Date()
+    const dataEhHoje =
+        props.data.getFullYear() === agora.getFullYear() &&
+        props.data.getMonth() === agora.getMonth() &&
+        props.data.getDate() === agora.getDate()
+    const horaAgora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+    function jaPassou(horario: string) {
+        return dataEhHoje && horario <= horaAgora
+    }
+
     function obterPeriodo(horario: string | null, qtde: number) {
         if (!horario) return []
         const horarios = manha.includes(horario) ? manha : tarde.includes(horario) ? tarde : noite
@@ -43,12 +54,12 @@ export default function HorariosInput(props: HorariosInputProps) {
         const selecionado =
             periodoSelecionado.length === props.qtdeHorarios && periodoSelecionado.includes(horario)
 
-        const periodoBloqueado = periodo.some((h) =>
-            horariosOcupados.some((ocupada) => ocupada === h)
+        const periodoBloqueado = periodo.some(
+            (h) => horariosOcupados.some((ocupada) => ocupada === h) || jaPassou(h)
         )
 
         const horaIndisponivel = periodoSelecionado.includes(horario)
-        const ocupado = horariosOcupados.includes(horario)
+        const ocupado = horariosOcupados.includes(horario) || jaPassou(horario)
 
         const getBotaoProps = () => {
             if (selecionado && !periodoBloqueado && !ocupado) {

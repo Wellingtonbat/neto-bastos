@@ -148,6 +148,12 @@ export class AgendamentoRepository implements RepositorioAgendamento {
     }
 
     const data = new Date(agendamento.data);
+    if (data.getTime() < Date.now()) {
+      throw new BadRequestException(
+        'Nao e possivel agendar em uma data ou horario que ja passou.',
+      );
+    }
+
     const { hora, minuto, diaSemana } = DataUtils.horaNoFuso(data);
     if (!profissional.diasTrabalho.includes(diaSemana)) {
       throw new BadRequestException(
