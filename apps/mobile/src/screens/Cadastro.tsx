@@ -57,7 +57,7 @@ export default function Cadastro({ navigation }: any) {
                     >
                         <View style={styles.conteudo}>
                             <Image
-                                source={require('../../assets/inicio/logo-brutal.png')}
+                                source={require('../../assets/logo.png')}
                                 style={styles.logo}
                             />
                             <Text style={styles.titulo}>🤘 DO CLASSICO AO ROCK 🤘</Text>

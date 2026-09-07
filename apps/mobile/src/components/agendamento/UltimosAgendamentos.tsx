@@ -102,7 +102,7 @@ export default function UltimosAgendamentos(props: UltimosAgendamentosProps) {
 
     return (
         <View style={styles.container}>
-            <Image source={require('../../../assets/inicio/logo-brutal.png')} style={styles.logo} />
+            <Image source={require('../../../assets/logo.png')} style={styles.logo} />
             <Text style={styles.titulo}>Fala, {usuario?.nome}!</Text>
             {renderizarConteudo()}
         </View>
