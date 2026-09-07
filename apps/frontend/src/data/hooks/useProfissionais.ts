@@ -18,7 +18,7 @@ export default function useProfissionais() {
 
     async function carregar() {
       try {
-        const res = await fetch(`${URL_BASE}/profissional`);
+        const res = await fetch(`${URL_BASE}/profissional?vinculados=true`);
         if (!res.ok) return;
         const dados = await res.json();
         if (ativo && Array.isArray(dados) && dados.length > 0) {

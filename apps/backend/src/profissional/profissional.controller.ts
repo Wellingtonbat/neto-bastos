@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UploadedFile,
   UseGuards,
@@ -78,7 +79,18 @@ export class ProfissionalController {
   }
 
   @Get()
-  buscarTodos() {
+  buscarTodos(@Query('vinculados') vinculados?: string) {
+    if (vinculados === 'true') {
+      return this.prisma.profissional.findMany({
+        where: {
+          usuario: {
+            role: { in: [RoleUsuario.BARBEIRO, RoleUsuario.DONO] },
+          },
+        },
+        orderBy: { id: 'asc' },
+      });
+    }
+
     return this.prisma.profissional.findMany({
       orderBy: { id: 'asc' },
     });
