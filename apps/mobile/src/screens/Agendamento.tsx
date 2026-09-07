@@ -35,7 +35,7 @@ export default function Agendamentos({ navigation }: any) {
                 setCarregandoDados(true)
                 setErroCarregamento('')
                 const [profissionaisApi, servicosApi] = await Promise.all([
-                    httpGet('profissional'),
+                    httpGet('profissional?vinculados=true'),
                     httpGet('servico'),
                 ])
 

@@ -85,6 +85,9 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const [horaInicio, setHoraInicio] = useState('08:00')
     const [horaFim, setHoraFim] = useState('19:00')
     const [tempoSlotMinutos, setTempoSlotMinutos] = useState('15')
+    const [temAlmoco, setTemAlmoco] = useState(false)
+    const [horaAlmocoInicio, setHoraAlmocoInicio] = useState('12:00')
+    const [horaAlmocoFim, setHoraAlmocoFim] = useState('13:00')
 
     const isDono = props.role === 'DONO'
 
@@ -193,6 +196,12 @@ export default function PainelAdmin(props: PainelAdminProps) {
         setHoraInicio(profissionalAgendaSelecionado.horaInicio ?? '08:00')
         setHoraFim(profissionalAgendaSelecionado.horaFim ?? '19:00')
         setTempoSlotMinutos(String(profissionalAgendaSelecionado.tempoSlotMinutos ?? 15))
+        const possuiAlmoco = !!(
+            profissionalAgendaSelecionado.horaAlmocoInicio && profissionalAgendaSelecionado.horaAlmocoFim
+        )
+        setTemAlmoco(possuiAlmoco)
+        setHoraAlmocoInicio(profissionalAgendaSelecionado.horaAlmocoInicio ?? '12:00')
+        setHoraAlmocoFim(profissionalAgendaSelecionado.horaAlmocoFim ?? '13:00')
     }, [profissionalAgendaSelecionado])
 
     async function atualizarStatusAgendamento(id: number, status: StatusAgendamento) {
@@ -327,6 +336,8 @@ export default function PainelAdmin(props: PainelAdminProps) {
                 diasTrabalho,
                 horaInicio,
                 horaFim,
+                horaAlmocoInicio: temAlmoco ? horaAlmocoInicio : null,
+                horaAlmocoFim: temAlmoco ? horaAlmocoFim : null,
                 tempoSlotMinutos: slot,
             })
 
@@ -573,6 +584,34 @@ export default function PainelAdmin(props: PainelAdminProps) {
                     keyboardType="number-pad"
                     style={styles.input}
                 />
+
+                <Pressable
+                    style={[styles.diaChip, temAlmoco ? styles.diaChipAtivo : null, { alignSelf: 'flex-start' }]}
+                    onPress={() => setTemAlmoco((v) => !v)}
+                >
+                    <Text style={styles.diaChipTexto}>
+                        {temAlmoco ? '✓ Horario de almoco definido' : 'Definir horario de almoco'}
+                    </Text>
+                </Pressable>
+
+                {temAlmoco ? (
+                    <>
+                        <TextInput
+                            placeholder="Almoco inicio (HH:mm)"
+                            placeholderTextColor="#71717a"
+                            value={horaAlmocoInicio}
+                            onChangeText={setHoraAlmocoInicio}
+                            style={styles.input}
+                        />
+                        <TextInput
+                            placeholder="Almoco fim (HH:mm)"
+                            placeholderTextColor="#71717a"
+                            value={horaAlmocoFim}
+                            onChangeText={setHoraAlmocoFim}
+                            style={styles.input}
+                        />
+                    </>
+                ) : null}
 
                 <Pressable style={styles.botaoPrimario} onPress={salvarAgenda}>
                     <Text style={styles.botaoPrimarioTexto}>Salvar agenda</Text>

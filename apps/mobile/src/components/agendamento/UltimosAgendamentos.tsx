@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image } from 'react-native'
+import { Alert, StyleSheet, Text, View, Image } from 'react-native'
 import { Agendamento } from '@neto-bastos/core'
 import useAPI from '../../data/hooks/useAPI'
 import React, { useEffect, useState } from 'react'
@@ -14,9 +14,10 @@ interface UltimosAgendamentosProps {
 
 export default function UltimosAgendamentos(props: UltimosAgendamentosProps) {
     const [agendamentos, setAgendamentos] = useState<Agendamento[]>()
-    const { httpGet } = useAPI()
+    const [cancelandoId, setCancelandoId] = useState<number | null>(null)
+    const { httpGet, httpPatch } = useAPI()
     const { usuario } = useUsuario()
-    const { versaoAgendamentos } = useAgendamento()
+    const { versaoAgendamentos, solicitarAtualizacaoAgendamentos } = useAgendamento()
 
     useEffect(() => {
         carregarAgendamentos()
@@ -42,6 +43,30 @@ export default function UltimosAgendamentos(props: UltimosAgendamentosProps) {
         setAgendamentos(agendamentos)
     }
 
+    function confirmarCancelamento(id: number) {
+        Alert.alert('Cancelar agendamento', 'Deseja realmente cancelar este agendamento?', [
+            { text: 'Voltar', style: 'cancel' },
+            {
+                text: 'Cancelar agendamento',
+                style: 'destructive',
+                onPress: () => cancelarAgendamento(id),
+            },
+        ])
+    }
+
+    async function cancelarAgendamento(id: number) {
+        try {
+            setCancelandoId(id)
+            await httpPatch(`agendamentos/${id}/status`, { status: 'CANCELADO' })
+            await carregarAgendamentos()
+            solicitarAtualizacaoAgendamentos()
+        } catch (e: any) {
+            Alert.alert('Erro', e?.message ?? 'Nao foi possivel cancelar o agendamento.')
+        } finally {
+            setCancelandoId(null)
+        }
+    }
+
     function renderizarConteudo() {
         if (agendamentos && agendamentos?.length > 0) {
             return (
@@ -49,7 +74,16 @@ export default function UltimosAgendamentos(props: UltimosAgendamentosProps) {
                     <Text style={styles.subtitulo}>Aqui estão seus últimos agendamentos:</Text>
                     {agendamentos
                         ?.reverse()
-                        .map((a: Agendamento) => <AgendamentoItem agendamento={a} key={a.id} />)}
+                        .map((a: Agendamento) => (
+                            <AgendamentoItem
+                                agendamento={a}
+                                key={a.id}
+                                cancelando={cancelandoId === a.id}
+                                onCancelar={
+                                    a.status !== 'CANCELADO' ? () => confirmarCancelamento(a.id) : undefined
+                                }
+                            />
+                        ))}
                 </View>
             )
         } else {

@@ -1,13 +1,16 @@
 import { Agendamento } from '@neto-bastos/core'
-import { StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native'
 
 interface AgendamentoItemProps {
     agendamento: Agendamento
+    cancelando?: boolean
+    onCancelar?: () => void
 }
 
 export default function AgendamentoItem(props: AgendamentoItemProps) {
     const cor = new Date(props.agendamento.data).getTime() > Date.now() ? '#007aff' : '#AAAAAA'
     const status = props.agendamento.status ?? 'PENDENTE'
+    const podeCancelar = status !== 'CANCELADO' && !!props.onCancelar
 
     function corStatus(valor: string) {
         if (valor === 'CONFIRMADO') return '#22c55e'
@@ -56,6 +59,19 @@ export default function AgendamentoItem(props: AgendamentoItemProps) {
             <Text style={styles.servicos}>{renderizarServicos()}</Text>
             <Text style={[styles.status, { color: corStatus(status) }]}>Status: {status}</Text>
             <Text style={styles.preco}>{`R$ ${somarTotalServicos()},00`}</Text>
+            {podeCancelar ? (
+                <Pressable
+                    style={styles.botaoCancelar}
+                    onPress={props.onCancelar}
+                    disabled={props.cancelando}
+                >
+                    {props.cancelando ? (
+                        <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                        <Text style={styles.textoBotaoCancelar}>Cancelar</Text>
+                    )}
+                </Pressable>
+            ) : null}
         </View>
     )
 }
@@ -96,5 +112,18 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontWeight: 'bold',
         fontStyle: 'italic',
+    },
+    botaoCancelar: {
+        marginTop: 10,
+        alignSelf: 'flex-start',
+        backgroundColor: '#b91c1c',
+        borderRadius: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 14,
+    },
+    textoBotaoCancelar: {
+        color: '#fff',
+        fontWeight: '700',
+        fontSize: 12,
     },
 })

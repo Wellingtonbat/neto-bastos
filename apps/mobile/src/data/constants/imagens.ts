@@ -59,21 +59,20 @@ export default imagens;
 
 type TipoImagem = "profissionais" | "servicos";
 
-// Imagens do seed vivem no public do frontend; no app usamos as versoes empacotadas por id.
+// Prioriza sempre a imagem real vinda do backend (banco de dados via
+// /imagens/:id, ou uma URL absoluta). As imagens empacotadas localmente por id
+// so servem de fallback quando o profissional/servico nao tem imagemUrl
+// nenhuma (nao devem "esconder" uma imagem real ja cadastrada).
 export function obterImagem(tipo: TipoImagem, id: number, imagemUrl?: string) {
-  if (
-    imagemUrl &&
-    (imagemUrl.startsWith("http://") || imagemUrl.startsWith("https://"))
-  ) {
-    return { uri: imagemUrl };
+  if (imagemUrl) {
+    if (imagemUrl.startsWith("http://") || imagemUrl.startsWith("https://")) {
+      return { uri: imagemUrl };
+    }
+    return { uri: `${URL_BASE}${imagemUrl}` };
   }
 
   const local = imagens[tipo].find((item) => item.id === id)?.imagem;
   if (local) return local;
-
-  if (imagemUrl) {
-    return { uri: `${URL_BASE}${imagemUrl}` };
-  }
 
   return undefined;
 }

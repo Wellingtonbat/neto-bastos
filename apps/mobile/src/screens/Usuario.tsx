@@ -8,7 +8,8 @@ export default function Usuario({ navigation }: any) {
     const { usuario } = useUsuario()
     const [refreshing, setRefreshing] = useState(false)
     const [refreshToken, setRefreshToken] = useState(0)
-    const ehAdmin = usuario?.role === 'DONO' || usuario?.role === 'BARBEIRO'
+    const ehAdmin =
+        usuario?.role === 'DONO' || usuario?.role === 'BARBEIRO' || usuario?.role === 'FUNCIONARIO'
 
     const onRefresh = useCallback(() => {
         if (!ehAdmin) return

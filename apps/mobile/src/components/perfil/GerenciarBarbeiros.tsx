@@ -16,17 +16,26 @@ import useAPI from '@/src/data/hooks/useAPI'
 import { useFocusEffect } from '@react-navigation/native'
 import { URL_BASE } from '@/src/data/constants/ambiente'
 
+type RolePerfil = 'BARBEIRO' | 'CLIENTE' | 'DONO' | 'FUNCIONARIO'
+
 type BarbeiroAdmin = {
     id: number
     nome: string
     email: string
     telefone?: string | null
+    role?: RolePerfil
     profissional?: {
         id: number
         nome: string
         descricao: string
         imagemUrl: string
     } | null
+}
+
+type ClienteAdmin = {
+    id: number
+    nome: string
+    email: string
 }
 
 type VisualizacaoBarbeiros = 'ATIVOS' | 'INATIVOS'
@@ -51,8 +60,14 @@ export default function GerenciarBarbeiros() {
 
     const [barbeiros, setBarbeiros] = useState<BarbeiroAdmin[]>([])
     const [barbeirosInativos, setBarbeirosInativos] = useState<BarbeiroAdmin[]>([])
+    const [clientes, setClientes] = useState<ClienteAdmin[]>([])
     const [profissionais, setProfissionais] = useState<{ id: number; nome: string }[]>([])
     const [erro, setErro] = useState('')
+
+    const [usuarioPerfilId, setUsuarioPerfilId] = useState<number | null>(null)
+    const [rolePerfilSelecionado, setRolePerfilSelecionado] = useState<RolePerfil>('CLIENTE')
+    const [profissionalPerfilId, setProfissionalPerfilId] = useState<number | null>(null)
+    const [salvandoPerfil, setSalvandoPerfil] = useState(false)
     const [carregando, setCarregando] = useState(false)
     const [carregandoUploadImagem, setCarregandoUploadImagem] = useState(false)
 
@@ -151,13 +166,73 @@ export default function GerenciarBarbeiros() {
         }
     }, [httpGet])
 
+    const carregarClientes = useCallback(async () => {
+        try {
+            const data = await httpGet('auth/clientes')
+            setClientes(data ?? [])
+        } catch {
+            setClientes([])
+        }
+    }, [httpGet])
+
     const carregarDados = useCallback(async () => {
         await Promise.all([
             carregarBarbeiros(),
             carregarBarbeirosInativos(),
             carregarProfissionais(),
+            carregarClientes(),
         ])
-    }, [carregarBarbeiros, carregarBarbeirosInativos, carregarProfissionais])
+    }, [carregarBarbeiros, carregarBarbeirosInativos, carregarProfissionais, carregarClientes])
+
+    const usuariosGerenciaveis = useMemo(() => {
+        const mapa = new Map<number, { id: number; nome: string; email: string; role: RolePerfil }>()
+        clientes.forEach((c) => mapa.set(c.id, { id: c.id, nome: c.nome, email: c.email, role: 'CLIENTE' }))
+        barbeiros.forEach((b) =>
+            mapa.set(b.id, { id: b.id, nome: b.nome, email: b.email, role: b.role ?? 'BARBEIRO' })
+        )
+        barbeirosInativos.forEach((b) =>
+            mapa.set(b.id, { id: b.id, nome: b.nome, email: b.email, role: b.role ?? 'CLIENTE' })
+        )
+        return Array.from(mapa.values()).sort((a, b) => a.nome.localeCompare(b.nome))
+    }, [clientes, barbeiros, barbeirosInativos])
+
+    const rolePerfilExigeProfissional = rolePerfilSelecionado === 'BARBEIRO' || rolePerfilSelecionado === 'DONO'
+
+    function selecionarUsuarioPerfil(id: number) {
+        setUsuarioPerfilId(id)
+        const alvo = usuariosGerenciaveis.find((u) => u.id === id)
+        setRolePerfilSelecionado(alvo?.role ?? 'CLIENTE')
+        setProfissionalPerfilId(null)
+    }
+
+    async function salvarPerfilUsuario() {
+        if (!usuarioPerfilId) {
+            Alert.alert('Selecione um usuario', 'Escolha um usuario para alterar o perfil.')
+            return
+        }
+
+        if (rolePerfilExigeProfissional && !profissionalPerfilId) {
+            Alert.alert('Selecione o profissional', 'Selecione um profissional para vincular ao novo perfil.')
+            return
+        }
+
+        try {
+            setSalvandoPerfil(true)
+            await httpPatch(`auth/usuarios/${usuarioPerfilId}/role`, {
+                role: rolePerfilSelecionado,
+                profissionalId: rolePerfilExigeProfissional ? profissionalPerfilId : null,
+            })
+            setUsuarioPerfilId(null)
+            setRolePerfilSelecionado('CLIENTE')
+            setProfissionalPerfilId(null)
+            await carregarDados()
+            Alert.alert('Sucesso', 'Perfil do usuario atualizado com sucesso.')
+        } catch (e: any) {
+            Alert.alert('Erro', e?.message ?? 'Nao foi possivel alterar o perfil do usuario.')
+        } finally {
+            setSalvandoPerfil(false)
+        }
+    }
 
     useEffect(() => {
         carregarDados()
@@ -493,6 +568,79 @@ export default function GerenciarBarbeiros() {
                     </View>
                 </View>
             ) : null}
+
+            <View style={styles.secaoPerfil}>
+                <Text style={styles.tituloSecaoPerfil}>Alterar perfil de um usuário</Text>
+                <Text style={styles.dicaPerfil}>
+                    Use para corrigir ou ajustar o perfil de um usuario existente (cliente, funcionario,
+                    barbeiro ou dono).
+                </Text>
+
+                <Text style={styles.label}>Usuario</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                    <View style={styles.chipsRow}>
+                        {usuariosGerenciaveis.map((u) => (
+                            <Pressable
+                                key={u.id}
+                                onPress={() => selecionarUsuarioPerfil(u.id)}
+                                style={[styles.chip, usuarioPerfilId === u.id ? styles.chipAtivo : null]}
+                            >
+                                <Text style={styles.chipTexto}>{u.nome}</Text>
+                            </Pressable>
+                        ))}
+                    </View>
+                </ScrollView>
+
+                <Text style={styles.label}>Perfil</Text>
+                <View style={styles.chipsRow}>
+                    {(['CLIENTE', 'FUNCIONARIO', 'BARBEIRO', 'DONO'] as const).map((perfil) => (
+                        <Pressable
+                            key={perfil}
+                            onPress={() => setRolePerfilSelecionado(perfil)}
+                            style={[styles.chip, rolePerfilSelecionado === perfil ? styles.chipAtivo : null]}
+                        >
+                            <Text style={styles.chipTexto}>
+                                {perfil === 'CLIENTE'
+                                    ? 'Cliente'
+                                    : perfil === 'FUNCIONARIO'
+                                        ? 'Funcionario'
+                                        : perfil === 'BARBEIRO'
+                                            ? 'Barbeiro'
+                                            : 'Dono'}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
+
+                {rolePerfilExigeProfissional ? (
+                    <>
+                        <Text style={styles.label}>Profissional</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                            <View style={styles.chipsRow}>
+                                {profissionais.map((p) => (
+                                    <Pressable
+                                        key={p.id}
+                                        onPress={() => setProfissionalPerfilId(p.id)}
+                                        style={[styles.chip, profissionalPerfilId === p.id ? styles.chipAtivo : null]}
+                                    >
+                                        <Text style={styles.chipTexto}>{p.nome}</Text>
+                                    </Pressable>
+                                ))}
+                            </View>
+                        </ScrollView>
+                    </>
+                ) : null}
+
+                <Pressable
+                    style={[styles.botaoSalvarPerfil, salvandoPerfil || !usuarioPerfilId ? styles.botaoUploadDesabilitado : null]}
+                    onPress={salvarPerfilUsuario}
+                    disabled={salvandoPerfil || !usuarioPerfilId}
+                >
+                    <Text style={styles.textoBotaoUpload}>
+                        {salvandoPerfil ? 'Salvando...' : 'Salvar perfil'}
+                    </Text>
+                </Pressable>
+            </View>
 
             <Modal animationType="slide" visible={modalAberto} onRequestClose={() => setModalAberto(false)}>
                 <ScrollView style={styles.modal} contentContainerStyle={styles.modalConteudo}>
@@ -859,6 +1007,33 @@ const styles = StyleSheet.create({
     textArea: {
         minHeight: 90,
         textAlignVertical: 'top',
+    },
+    secaoPerfil: {
+        marginTop: 20,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#2c2c2c',
+        gap: 8,
+    },
+    tituloSecaoPerfil: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    dicaPerfil: {
+        color: '#a1a1aa',
+        fontSize: 12,
+        marginBottom: 6,
+    },
+    chipsScroll: {
+        maxHeight: 44,
+    },
+    botaoSalvarPerfil: {
+        marginTop: 12,
+        backgroundColor: '#1d4ed8',
+        borderRadius: 8,
+        paddingVertical: 12,
+        alignItems: 'center',
     },
     botaoUpload: {
         marginTop: 12,
