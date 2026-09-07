@@ -25,6 +25,8 @@ interface AtualizarAgendaInput {
   diasTrabalho: number[];
   horaInicio: string;
   horaFim: string;
+  horaAlmocoInicio?: string | null;
+  horaAlmocoFim?: string | null;
   tempoSlotMinutos: number;
 }
 
@@ -186,6 +188,8 @@ export class ProfissionalController {
         diasTrabalho: agenda.diasTrabalho,
         horaInicio: agenda.horaInicio,
         horaFim: agenda.horaFim,
+        horaAlmocoInicio: agenda.horaAlmocoInicio,
+        horaAlmocoFim: agenda.horaAlmocoFim,
         tempoSlotMinutos: agenda.tempoSlotMinutos,
       },
     });
@@ -231,11 +235,71 @@ export class ProfissionalController {
       );
     }
 
+    const { horaAlmocoInicio, horaAlmocoFim } = this.normalizarAlmoco(
+      body,
+      regexHora,
+      inicio,
+      fim,
+    );
+
     return {
       diasTrabalho: diasNormalizados,
       horaInicio,
       horaFim,
+      horaAlmocoInicio,
+      horaAlmocoFim,
       tempoSlotMinutos,
+    };
+  }
+
+  private normalizarAlmoco(
+    body: AtualizarAgendaInput,
+    regexHora: RegExp,
+    inicioJanela: number,
+    fimJanela: number,
+  ) {
+    const horaAlmocoInicioBruta = (body?.horaAlmocoInicio ?? '').trim();
+    const horaAlmocoFimBruta = (body?.horaAlmocoFim ?? '').trim();
+
+    if (!horaAlmocoInicioBruta && !horaAlmocoFimBruta) {
+      return { horaAlmocoInicio: null, horaAlmocoFim: null };
+    }
+
+    if (!horaAlmocoInicioBruta || !horaAlmocoFimBruta) {
+      throw new BadRequestException(
+        'Informe inicio e fim do horario de almoco, ou deixe ambos em branco.',
+      );
+    }
+
+    if (
+      !regexHora.test(horaAlmocoInicioBruta) ||
+      !regexHora.test(horaAlmocoFimBruta)
+    ) {
+      throw new BadRequestException(
+        'Horario de almoco invalido. Use HH:mm.',
+      );
+    }
+
+    const [hAI, mAI] = horaAlmocoInicioBruta.split(':').map(Number);
+    const [hAF, mAF] = horaAlmocoFimBruta.split(':').map(Number);
+    const inicioAlmoco = hAI * 60 + mAI;
+    const fimAlmoco = hAF * 60 + mAF;
+
+    if (fimAlmoco <= inicioAlmoco) {
+      throw new BadRequestException(
+        'O fim do almoco deve ser maior que o inicio.',
+      );
+    }
+
+    if (inicioAlmoco < inicioJanela || fimAlmoco > fimJanela) {
+      throw new BadRequestException(
+        'O horario de almoco deve estar dentro da janela de atendimento.',
+      );
+    }
+
+    return {
+      horaAlmocoInicio: horaAlmocoInicioBruta,
+      horaAlmocoFim: horaAlmocoFimBruta,
     };
   }
 }

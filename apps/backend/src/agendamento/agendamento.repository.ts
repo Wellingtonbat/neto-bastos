@@ -137,6 +137,8 @@ export class AgendamentoRepository implements RepositorioAgendamento {
         diasTrabalho: true,
         horaInicio: true,
         horaFim: true,
+        horaAlmocoInicio: true,
+        horaAlmocoFim: true,
         tempoSlotMinutos: true,
       },
     });
@@ -177,6 +179,25 @@ export class AgendamentoRepository implements RepositorioAgendamento {
       throw new BadRequestException(
         'Horario invalido para a agenda do profissional.',
       );
+    }
+
+    if (profissional.horaAlmocoInicio && profissional.horaAlmocoFim) {
+      const [horaAlmocoInicio, minutoAlmocoInicio] =
+        profissional.horaAlmocoInicio.split(':').map(Number);
+      const [horaAlmocoFim, minutoAlmocoFim] = profissional.horaAlmocoFim
+        .split(':')
+        .map(Number);
+      const inicioAlmoco = horaAlmocoInicio * 60 + minutoAlmocoInicio;
+      const fimAlmoco = horaAlmocoFim * 60 + minutoAlmocoFim;
+
+      if (
+        minutosSelecionados >= inicioAlmoco &&
+        minutosSelecionados < fimAlmoco
+      ) {
+        throw new BadRequestException(
+          'Profissional esta no horario de almoco neste horario.',
+        );
+      }
     }
   }
 }

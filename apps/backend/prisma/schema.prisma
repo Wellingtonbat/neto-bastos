@@ -36,6 +36,8 @@ model Profissional {
   diasTrabalho         Int[]         @default([1, 2, 3, 4, 5, 6])
   horaInicio           String        @default("08:00")
   horaFim              String        @default("19:00")
+  horaAlmocoInicio     String?
+  horaAlmocoFim        String?
   tempoSlotMinutos     Int           @default(15)
   agendamentos         Agendamento[]
   usuario              Usuario?

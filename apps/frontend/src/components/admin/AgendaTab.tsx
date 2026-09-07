@@ -23,6 +23,9 @@ export default function AgendaTab(props: AgendaTabProps) {
     const [horaInicio, setHoraInicio] = useState('08:00')
     const [horaFim, setHoraFim] = useState('19:00')
     const [tempoSlotMinutos, setTempoSlotMinutos] = useState('15')
+    const [temAlmoco, setTemAlmoco] = useState(false)
+    const [horaAlmocoInicio, setHoraAlmocoInicio] = useState('12:00')
+    const [horaAlmocoFim, setHoraAlmocoFim] = useState('13:00')
 
     const profissionaisPermitidosAgenda = useMemo(() => {
         if (usuario?.role === 'BARBEIRO') {
@@ -48,6 +51,30 @@ export default function AgendaTab(props: AgendaTabProps) {
     const slot = Number(tempoSlotMinutos)
     const erroTempoSlot = !Number.isInteger(slot) || slot < 5 || slot > 120
 
+    const erroHoraAlmocoInicio = temAlmoco && !regexHora.test(horaAlmocoInicio)
+    const erroHoraAlmocoFim = temAlmoco && !regexHora.test(horaAlmocoFim)
+
+    const minutosAlmocoInicio =
+        temAlmoco && !erroHoraAlmocoInicio
+            ? Number(horaAlmocoInicio.slice(0, 2)) * 60 + Number(horaAlmocoInicio.slice(3, 5))
+            : 0
+    const minutosAlmocoFim =
+        temAlmoco && !erroHoraAlmocoFim
+            ? Number(horaAlmocoFim.slice(0, 2)) * 60 + Number(horaAlmocoFim.slice(3, 5))
+            : 0
+
+    const erroJanelaAlmoco =
+        temAlmoco && !erroHoraAlmocoInicio && !erroHoraAlmocoFim && minutosAlmocoFim <= minutosAlmocoInicio
+
+    const erroAlmocoForaDaJanela =
+        temAlmoco &&
+        !erroHoraAlmocoInicio &&
+        !erroHoraAlmocoFim &&
+        !erroJanelaAlmoco &&
+        !erroHoraInicio &&
+        !erroHoraFimFormato &&
+        (minutosAlmocoInicio < minutosInicio || minutosAlmocoFim > minutosFim)
+
     const erroAgendaFormulario = useMemo(() => {
         if (erroProfissionalAgenda) return 'Selecione um barbeiro para editar a agenda.'
 
@@ -67,8 +94,31 @@ export default function AgendaTab(props: AgendaTabProps) {
             return 'Tempo por slot deve ser um numero inteiro entre 5 e 120.'
         }
 
+        if (erroHoraAlmocoInicio || erroHoraAlmocoFim) {
+            return 'Informe um horario de almoco valido no formato HH:mm.'
+        }
+
+        if (erroJanelaAlmoco) {
+            return 'O fim do almoco deve ser maior que o inicio.'
+        }
+
+        if (erroAlmocoForaDaJanela) {
+            return 'O horario de almoco deve estar dentro da janela de atendimento.'
+        }
+
         return ''
-    }, [erroDiasTrabalho, erroHoraFimFormato, erroHoraInicio, erroJanelaHora, erroProfissionalAgenda, erroTempoSlot])
+    }, [
+        erroDiasTrabalho,
+        erroHoraFimFormato,
+        erroHoraInicio,
+        erroJanelaHora,
+        erroProfissionalAgenda,
+        erroTempoSlot,
+        erroHoraAlmocoInicio,
+        erroHoraAlmocoFim,
+        erroJanelaAlmoco,
+        erroAlmocoForaDaJanela,
+    ])
 
     useEffect(() => {
         if (profissionaisAdmin.length === 0) return
@@ -90,6 +140,12 @@ export default function AgendaTab(props: AgendaTabProps) {
         setHoraInicio(profissionalAgendaSelecionado.horaInicio ?? '08:00')
         setHoraFim(profissionalAgendaSelecionado.horaFim ?? '19:00')
         setTempoSlotMinutos(String(profissionalAgendaSelecionado.tempoSlotMinutos ?? 15))
+        const possuiAlmoco = !!(
+            profissionalAgendaSelecionado.horaAlmocoInicio && profissionalAgendaSelecionado.horaAlmocoFim
+        )
+        setTemAlmoco(possuiAlmoco)
+        setHoraAlmocoInicio(profissionalAgendaSelecionado.horaAlmocoInicio ?? '12:00')
+        setHoraAlmocoFim(profissionalAgendaSelecionado.horaAlmocoFim ?? '13:00')
     }, [profissionalAgendaSelecionado])
 
     function alternarDia(dia: number) {
@@ -111,6 +167,8 @@ export default function AgendaTab(props: AgendaTabProps) {
                 diasTrabalho,
                 horaInicio,
                 horaFim,
+                horaAlmocoInicio: temAlmoco ? horaAlmocoInicio : null,
+                horaAlmocoFim: temAlmoco ? horaAlmocoFim : null,
                 tempoSlotMinutos: Number(tempoSlotMinutos),
             })
 
@@ -198,6 +256,34 @@ export default function AgendaTab(props: AgendaTabProps) {
             {erroDiasTrabalho ? (
                 <p className="text-xs text-red-400">Selecione ao menos um dia de trabalho.</p>
             ) : null}
+
+            <div className="space-y-3 border-t border-zinc-700 pt-4">
+                <label className="flex items-center gap-2 text-sm text-zinc-200">
+                    <input
+                        type="checkbox"
+                        checked={temAlmoco}
+                        onChange={(e) => setTemAlmoco(e.target.checked)}
+                    />
+                    Definir horário de almoço
+                </label>
+
+                {temAlmoco ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <input
+                            type="time"
+                            value={horaAlmocoInicio}
+                            onChange={(e) => setHoraAlmocoInicio(e.target.value)}
+                            className={`bg-zinc-900 border rounded px-3 py-2 ${erroHoraAlmocoInicio || erroJanelaAlmoco || erroAlmocoForaDaJanela ? 'border-red-500' : 'border-zinc-700'}`}
+                        />
+                        <input
+                            type="time"
+                            value={horaAlmocoFim}
+                            onChange={(e) => setHoraAlmocoFim(e.target.value)}
+                            className={`bg-zinc-900 border rounded px-3 py-2 ${erroHoraAlmocoFim || erroJanelaAlmoco || erroAlmocoForaDaJanela ? 'border-red-500' : 'border-zinc-700'}`}
+                        />
+                    </div>
+                ) : null}
+            </div>
 
             {erroAgendaFormulario ? (
                 <p className="text-sm text-amber-300">{erroAgendaFormulario}</p>

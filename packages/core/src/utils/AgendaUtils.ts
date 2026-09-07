@@ -22,12 +22,17 @@ export default class AgendaUtils {
     horaInicio: string,
     horaFim: string,
     tempoSlotMinutos: number,
+    horaAlmocoInicio?: string | null,
+    horaAlmocoFim?: string | null,
   ) {
     const [inicioHora, inicioMinuto] = horaInicio.split(":").map(Number);
     const [fimHora, fimMinuto] = horaFim.split(":").map(Number);
 
     const inicio = inicioHora * 60 + inicioMinuto;
     const fim = fimHora * 60 + fimMinuto;
+
+    const almoco = this.obterJanelaAlmoco(horaAlmocoInicio, horaAlmocoFim);
+
     const horarios: string[] = [];
 
     for (
@@ -35,6 +40,10 @@ export default class AgendaUtils {
       minutoAtual < fim;
       minutoAtual += tempoSlotMinutos
     ) {
+      if (almoco && minutoAtual >= almoco.inicio && minutoAtual < almoco.fim) {
+        continue;
+      }
+
       const hora = Math.floor(minutoAtual / 60);
       const minuto = minutoAtual % 60;
       horarios.push(
@@ -43,6 +52,25 @@ export default class AgendaUtils {
     }
 
     return horarios;
+  }
+
+  private static obterJanelaAlmoco(
+    horaAlmocoInicio?: string | null,
+    horaAlmocoFim?: string | null,
+  ) {
+    if (!horaAlmocoInicio || !horaAlmocoFim) return null;
+
+    const [almocoInicioHora, almocoInicioMinuto] = horaAlmocoInicio
+      .split(":")
+      .map(Number);
+    const [almocoFimHora, almocoFimMinuto] = horaAlmocoFim
+      .split(":")
+      .map(Number);
+
+    return {
+      inicio: almocoInicioHora * 60 + almocoInicioMinuto,
+      fim: almocoFimHora * 60 + almocoFimMinuto,
+    };
   }
 
   static separarPorPeriodo(horarios: string[]) {

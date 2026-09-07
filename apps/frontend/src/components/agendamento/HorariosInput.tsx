@@ -21,7 +21,13 @@ export default function HorariosInput(props: HorariosInputProps) {
     const diaSelecionado = props.data.getDay()
     const diaDisponivel = diasTrabalho.includes(diaSelecionado)
 
-    const horariosBase = AgendaUtils.horariosPorIntervalo(horaInicio, horaFim, tempoSlotMinutos)
+    const horariosBase = AgendaUtils.horariosPorIntervalo(
+        horaInicio,
+        horaFim,
+        tempoSlotMinutos,
+        profissional?.horaAlmocoInicio,
+        profissional?.horaAlmocoFim
+    )
     const { manha, tarde, noite } = AgendaUtils.separarPorPeriodo(horariosBase)
 
     const horaSelecionada = props.data.toLocaleTimeString('pt-BR', {

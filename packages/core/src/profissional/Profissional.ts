@@ -8,5 +8,7 @@ export default interface Profissional {
   diasTrabalho?: number[];
   horaInicio?: string;
   horaFim?: string;
+  horaAlmocoInicio?: string | null;
+  horaAlmocoFim?: string | null;
   tempoSlotMinutos?: number;
 }

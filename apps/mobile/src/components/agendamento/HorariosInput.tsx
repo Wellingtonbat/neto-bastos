@@ -16,7 +16,9 @@ export default function HorariosInput(props: HorariosInputProps) {
     const horarios = AgendaUtils.horariosPorIntervalo(
         profissional?.horaInicio ?? '08:00',
         profissional?.horaFim ?? '19:00',
-        profissional?.tempoSlotMinutos ?? 15
+        profissional?.tempoSlotMinutos ?? 15,
+        profissional?.horaAlmocoInicio,
+        profissional?.horaAlmocoFim
     )
     const { manha, tarde, noite } = AgendaUtils.separarPorPeriodo(horarios)
 
