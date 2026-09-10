@@ -12,7 +12,8 @@ name: Keep Render services awake
 # "9-23,0-2" corresponde a 6h-23h59 no horario de Brasilia.
 on:
   schedule:
-    - cron: "*/10 9-23,0-2 * * *"
+    - cron: "*/10 9-23 * * *"
+    - cron: "*/10 0-2 * * *"
   workflow_dispatch: {}
 
 jobs:
