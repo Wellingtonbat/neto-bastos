@@ -17,6 +17,7 @@ import useUsuario from '../data/hooks/useUsuario'
 import useAPI from '../data/hooks/useAPI'
 import React, { useEffect, useState } from 'react'
 import useFormUsuario from '../data/hooks/useFormUsuario'
+import { AntDesign } from '@expo/vector-icons'
 import * as Google from 'expo-auth-session/providers/google'
 import { GOOGLE_ANDROID_CLIENT_ID } from '../data/constants/ambiente'
 
@@ -188,7 +189,7 @@ export default function Cadastro({ navigation }: any) {
                                     {carregandoGoogle ? (
                                         <ActivityIndicator color="#1f2937" size="small" />
                                     ) : (
-                                        <Text style={styles.buttonGoogleText}>Continuar com Google</Text>
+                                        <AntDesign name="google" size={22} color="#1f2937" />
                                     )}
                                 </Pressable>
                             ) : null}
@@ -279,18 +280,19 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     buttonGoogle: {
-        marginTop: 12,
-        width: '70%',
-        height: 40,
+        marginTop: 14,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         backgroundColor: '#fff',
-        borderRadius: 5,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    buttonGoogleText: {
-        color: '#1f2937',
-        fontSize: 14,
-        fontWeight: '600',
+        alignSelf: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 2,
     },
     imagemDeFundo: {
         flex: 1,
