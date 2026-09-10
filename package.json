@@ -23,7 +23,9 @@
       "packages/*"
     ],
     "nohoist": [
-      "mobile/**"
+      "mobile/**",
+      "frontend/react",
+      "frontend/react-dom"
     ]
   },
   "resolutions": {
