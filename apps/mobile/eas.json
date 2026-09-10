@@ -9,7 +9,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://neto-bastos.onrender.com",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "420633978191-lp3t1b26h31tidrv1fb9ldj6t0jp2huk.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "420633978191-ammiui5ge00kvd30tb0un06u8s0jsc0o.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -18,7 +18,7 @@
       },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://neto-bastos.onrender.com",
-        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "420633978191-lp3t1b26h31tidrv1fb9ldj6t0jp2huk.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "420633978191-ammiui5ge00kvd30tb0un06u8s0jsc0o.apps.googleusercontent.com"
       }
     }
   }
