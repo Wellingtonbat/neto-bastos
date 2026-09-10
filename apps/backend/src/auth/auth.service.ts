@@ -101,9 +101,17 @@ export class AuthService {
       );
     }
 
+    // O app mobile (Android nativo) autentica com um client id proprio,
+    // diferente do client id usado pelo site (web). O token emitido pelo
+    // Google carrega o client id de origem no campo "aud", entao aceitamos
+    // qualquer um dos dois como audiencia valida.
+    const audiencias = [googleClientId, process.env.GOOGLE_CLIENT_ID_ANDROID].filter(
+      (valor): valor is string => !!valor,
+    );
+
     const ticket = await this.googleClient.verifyIdToken({
       idToken,
-      audience: googleClientId,
+      audience: audiencias,
     });
 
     const payload = ticket.getPayload();

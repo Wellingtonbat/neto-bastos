@@ -11,24 +11,46 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native'
 import useUsuario from '../data/hooks/useUsuario'
+import useAPI from '../data/hooks/useAPI'
 import React, { useEffect, useState } from 'react'
 import useFormUsuario from '../data/hooks/useFormUsuario'
+import * as Google from 'expo-auth-session/providers/google'
+import * as WebBrowser from 'expo-web-browser'
+import { GOOGLE_ANDROID_CLIENT_ID } from '../data/constants/ambiente'
+
+WebBrowser.maybeCompleteAuthSession()
 
 export default function Cadastro({ navigation }: any) {
 
-    const { usuario } = useUsuario()
+    const { usuario, entrar } = useUsuario()
+    const { httpPost } = useAPI()
     const {
         nome, setNome, email, setEmail, telefone, setTelefone, errors, cadastrar,
     } = useFormUsuario()
     const [carregando, setCarregando] = useState(false)
+    const [carregandoGoogle, setCarregandoGoogle] = useState(false)
+
+    const [requisicaoGoogle, respostaGoogle, iniciarLoginGoogle] = Google.useAuthRequest({
+        androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
+    })
 
     useEffect(() => {
         if (usuario) {
             navigation?.replace('Principal')
         }
     }, [usuario])
+
+    useEffect(() => {
+        if (respostaGoogle?.type !== 'success') return
+
+        const idToken = respostaGoogle.authentication?.idToken
+        if (!idToken) return
+
+        entrarComGoogle(idToken)
+    }, [respostaGoogle])
 
     async function handleEntrar() {
         try {
@@ -38,6 +60,18 @@ export default function Cadastro({ navigation }: any) {
             Alert.alert('Erro ao entrar', erro?.message ?? 'Nao foi possivel concluir o login.')
         } finally {
             setCarregando(false)
+        }
+    }
+
+    async function entrarComGoogle(idToken: string) {
+        try {
+            setCarregandoGoogle(true)
+            const usuarioAutenticado = await httpPost('auth/google', { idToken })
+            await entrar(usuarioAutenticado)
+        } catch (erro: any) {
+            Alert.alert('Erro ao entrar com Google', erro?.message ?? 'Nao foi possivel concluir o login.')
+        } finally {
+            setCarregandoGoogle(false)
         }
     }
 
@@ -112,6 +146,23 @@ export default function Cadastro({ navigation }: any) {
                             >
                                 <Text style={styles.buttonText}>{carregando ? 'Entrando...' : 'Entrar'}</Text>
                             </Pressable>
+
+                            {GOOGLE_ANDROID_CLIENT_ID ? (
+                                <Pressable
+                                    style={[
+                                        styles.buttonGoogle,
+                                        !requisicaoGoogle || carregandoGoogle ? styles.buttonDesabilitado : null,
+                                    ]}
+                                    onPress={() => iniciarLoginGoogle()}
+                                    disabled={!requisicaoGoogle || carregandoGoogle}
+                                >
+                                    {carregandoGoogle ? (
+                                        <ActivityIndicator color="#1f2937" size="small" />
+                                    ) : (
+                                        <Text style={styles.buttonGoogleText}>Continuar com Google</Text>
+                                    )}
+                                </Pressable>
+                            ) : null}
                         </View>
                     </ScrollView>
                 </KeyboardAvoidingView>
@@ -173,6 +224,20 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#fff',
         fontSize: 16,
+    },
+    buttonGoogle: {
+        marginTop: 12,
+        width: '70%',
+        height: 40,
+        backgroundColor: '#fff',
+        borderRadius: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    buttonGoogleText: {
+        color: '#1f2937',
+        fontSize: 14,
+        fontWeight: '600',
     },
     imagemDeFundo: {
         flex: 1,
