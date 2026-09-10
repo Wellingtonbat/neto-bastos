@@ -7,6 +7,12 @@
     "icon": "./assets/images/icon.png",
     "scheme": "netobastos",
     "userInterfaceStyle": "automatic",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a8455ad7-dbbe-4d98-85e1-06e1aef9aa42"
+    },
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
