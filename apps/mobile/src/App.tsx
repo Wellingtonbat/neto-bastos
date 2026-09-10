@@ -7,6 +7,12 @@ import Cadastro from './screens/Cadastro'
 import Principal from './screens/Principal'
 import Sumario from './screens/Sumario'
 import * as Notifications from 'expo-notifications'
+import * as WebBrowser from 'expo-web-browser'
+
+// Precisa ser chamado o quanto antes, na raiz do app, para o retorno do
+// fluxo de login com Google (via navegador) conseguir fechar a aba e
+// voltar pro app de forma confiavel.
+WebBrowser.maybeCompleteAuthSession()
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({

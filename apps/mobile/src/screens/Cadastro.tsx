@@ -18,10 +18,9 @@ import useAPI from '../data/hooks/useAPI'
 import React, { useEffect, useState } from 'react'
 import useFormUsuario from '../data/hooks/useFormUsuario'
 import * as Google from 'expo-auth-session/providers/google'
-import * as WebBrowser from 'expo-web-browser'
 import { GOOGLE_ANDROID_CLIENT_ID } from '../data/constants/ambiente'
 
-WebBrowser.maybeCompleteAuthSession()
+// Chamado tambem na raiz do app (src/App.tsx), o quanto antes possivel.
 
 export default function Cadastro({ navigation }: any) {
 
