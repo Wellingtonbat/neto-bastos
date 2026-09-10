@@ -68,6 +68,7 @@ export default function GerenciarBarbeiros() {
     const [rolePerfilSelecionado, setRolePerfilSelecionado] = useState<RolePerfil>('CLIENTE')
     const [profissionalPerfilId, setProfissionalPerfilId] = useState<number | null>(null)
     const [salvandoPerfil, setSalvandoPerfil] = useState(false)
+    const [resetandoSenha, setResetandoSenha] = useState(false)
     const [carregando, setCarregando] = useState(false)
     const [carregandoUploadImagem, setCarregandoUploadImagem] = useState(false)
 
@@ -231,6 +232,41 @@ export default function GerenciarBarbeiros() {
             Alert.alert('Erro', e?.message ?? 'Nao foi possivel alterar o perfil do usuario.')
         } finally {
             setSalvandoPerfil(false)
+        }
+    }
+
+    function confirmarResetarSenha() {
+        if (!usuarioPerfilId) {
+            Alert.alert('Selecione um usuario', 'Escolha um usuario para resetar a senha.')
+            return
+        }
+
+        const alvo = usuariosGerenciaveis.find((u) => u.id === usuarioPerfilId)
+        Alert.alert(
+            'Resetar senha',
+            `Resetar a senha de ${alvo?.nome ?? 'usuario selecionado'}? Na proxima vez que essa pessoa tentar entrar, a senha que ela digitar sera cadastrada como nova senha.`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Resetar',
+                    style: 'destructive',
+                    onPress: resetarSenhaUsuario,
+                },
+            ],
+        )
+    }
+
+    async function resetarSenhaUsuario() {
+        if (!usuarioPerfilId) return
+
+        try {
+            setResetandoSenha(true)
+            await httpPatch(`auth/usuarios/${usuarioPerfilId}/resetar-senha`, {})
+            Alert.alert('Sucesso', 'Senha resetada com sucesso.')
+        } catch (e: any) {
+            Alert.alert('Erro', e?.message ?? 'Nao foi possivel resetar a senha do usuario.')
+        } finally {
+            setResetandoSenha(false)
         }
     }
 
@@ -631,15 +667,26 @@ export default function GerenciarBarbeiros() {
                     </>
                 ) : null}
 
-                <Pressable
-                    style={[styles.botaoSalvarPerfil, salvandoPerfil || !usuarioPerfilId ? styles.botaoUploadDesabilitado : null]}
-                    onPress={salvarPerfilUsuario}
-                    disabled={salvandoPerfil || !usuarioPerfilId}
-                >
-                    <Text style={styles.textoBotaoUpload}>
-                        {salvandoPerfil ? 'Salvando...' : 'Salvar perfil'}
-                    </Text>
-                </Pressable>
+                <View style={styles.acoesPerfil}>
+                    <Pressable
+                        style={[styles.botaoSalvarPerfil, salvandoPerfil || !usuarioPerfilId ? styles.botaoUploadDesabilitado : null]}
+                        onPress={salvarPerfilUsuario}
+                        disabled={salvandoPerfil || !usuarioPerfilId}
+                    >
+                        <Text style={styles.textoBotaoUpload}>
+                            {salvandoPerfil ? 'Salvando...' : 'Salvar perfil'}
+                        </Text>
+                    </Pressable>
+                    <Pressable
+                        style={[styles.botaoResetarSenha, resetandoSenha || !usuarioPerfilId ? styles.botaoUploadDesabilitado : null]}
+                        onPress={confirmarResetarSenha}
+                        disabled={resetandoSenha || !usuarioPerfilId}
+                    >
+                        <Text style={styles.textoBotaoUpload}>
+                            {resetandoSenha ? 'Resetando...' : 'Resetar senha'}
+                        </Text>
+                    </Pressable>
+                </View>
             </View>
 
             <Modal animationType="slide" visible={modalAberto} onRequestClose={() => setModalAberto(false)}>
@@ -1028,9 +1075,21 @@ const styles = StyleSheet.create({
     chipsScroll: {
         maxHeight: 44,
     },
-    botaoSalvarPerfil: {
+    acoesPerfil: {
         marginTop: 12,
+        flexDirection: 'row',
+        gap: 10,
+    },
+    botaoSalvarPerfil: {
+        flex: 1,
         backgroundColor: '#1d4ed8',
+        borderRadius: 8,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    botaoResetarSenha: {
+        flex: 1,
+        backgroundColor: '#b45309',
         borderRadius: 8,
         paddingVertical: 12,
         alignItems: 'center',

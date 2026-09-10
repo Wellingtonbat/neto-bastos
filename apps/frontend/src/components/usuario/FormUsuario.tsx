@@ -8,11 +8,14 @@ import Logo from '@/components/shared/Logo'
 import Image from 'next/image'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
+const TAMANHO_MINIMO_SENHA = 6
 
 export default function FormUsuario() {
     const [nome, setNome] = useState('')
     const [email, setEmail] = useState('')
     const [telefone, setTelefone] = useState('')
+    const [senha, setSenha] = useState('')
+    const [mostrarSenha, setMostrarSenha] = useState(false)
     const [erro, setErro] = useState('')
     const [enviando, setEnviando] = useState(false)
 
@@ -42,10 +45,15 @@ export default function FormUsuario() {
             return
         }
 
+        if (senha.length < TAMANHO_MINIMO_SENHA) {
+            setErro(`A senha deve ter ao menos ${TAMANHO_MINIMO_SENHA} caracteres.`)
+            return
+        }
+
         try {
             setErro('')
             setEnviando(true)
-            await entrar({ nome: nomeAparado, email: emailAparado, telefone })
+            await entrar({ nome: nomeAparado, email: emailAparado, telefone, senha })
         } catch (e: any) {
             setErro(e?.message ?? 'Não foi possível entrar.')
         } finally {
@@ -87,6 +95,25 @@ export default function FormUsuario() {
                             placeholder="Telefone"
                             className="bg-zinc-900 px-4 py-2 rounded"
                         />
+                        <div className="relative">
+                            <input
+                                type={mostrarSenha ? 'text' : 'password'}
+                                value={senha}
+                                onChange={(e) => setSenha(e.target.value)}
+                                placeholder="Senha"
+                                className="bg-zinc-900 px-4 py-2 rounded w-full pr-16"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setMostrarSenha((v) => !v)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400"
+                            >
+                                {mostrarSenha ? 'ocultar' : 'mostrar'}
+                            </button>
+                        </div>
+                        <p className="text-xs text-zinc-500 -mt-3">
+                            Primeiro acesso? A senha digitada agora será cadastrada para sua conta.
+                        </p>
                         {erro ? (
                             <p className="text-sm text-red-400">{erro}</p>
                         ) : null}

@@ -29,6 +29,7 @@ type AcaoCarregando =
     | 'INATIVAR_BARBEIRO'
     | 'REATIVAR_BARBEIRO'
     | 'ALTERAR_PERFIL'
+    | 'RESETAR_SENHA'
     | null
 
 type VisualizacaoBarbeiros = 'ATIVOS' | 'INATIVOS'
@@ -427,6 +428,32 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
         }
     }
 
+    async function resetarSenhaUsuario() {
+        if (!usuarioPerfilId) {
+            setErro('Selecione um usuario para resetar a senha.')
+            return
+        }
+
+        const alvo = usuariosGerenciaveis.find((u) => String(u.id) === usuarioPerfilId)
+        if (
+            !window.confirm(
+                `Resetar a senha de ${alvo?.nome ?? 'usuario selecionado'}? Na proxima vez que essa pessoa tentar entrar, a senha que ela digitar sera cadastrada como nova senha.`
+            )
+        ) {
+            return
+        }
+
+        try {
+            setErro('')
+            setAcaoCarregando('RESETAR_SENHA')
+            await httpPatch(`auth/usuarios/${usuarioPerfilId}/resetar-senha`, {})
+        } catch (e: any) {
+            setErro(e?.message ?? 'Nao foi possivel resetar a senha do usuario.')
+        } finally {
+            setAcaoCarregando(null)
+        }
+    }
+
     if (!ehDono) {
         return (
             <section className="bg-zinc-800 border border-zinc-700 rounded-lg p-5 space-y-4">
@@ -603,13 +630,22 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
                     ) : null}
                 </div>
 
-                <button
-                    onClick={salvarPerfilUsuario}
-                    disabled={!!acaoCarregando || !usuarioPerfilId}
-                    className="button bg-blue-700"
-                >
-                    {acaoCarregando === 'ALTERAR_PERFIL' ? 'Salvando...' : 'Salvar perfil'}
-                </button>
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        onClick={salvarPerfilUsuario}
+                        disabled={!!acaoCarregando || !usuarioPerfilId}
+                        className="button bg-blue-700"
+                    >
+                        {acaoCarregando === 'ALTERAR_PERFIL' ? 'Salvando...' : 'Salvar perfil'}
+                    </button>
+                    <button
+                        onClick={resetarSenhaUsuario}
+                        disabled={!!acaoCarregando || !usuarioPerfilId}
+                        className="button bg-amber-700"
+                    >
+                        {acaoCarregando === 'RESETAR_SENHA' ? 'Resetando...' : 'Resetar senha'}
+                    </button>
+                </div>
             </div>
 
             {barbeiroPendenteInativacao ? (

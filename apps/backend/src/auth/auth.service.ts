@@ -4,14 +4,18 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/db/prisma.service';
-import { Prisma, RoleUsuario } from '@prisma/client';
+import { Prisma, RoleUsuario, Usuario } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
+
+const TAMANHO_MINIMO_SENHA = 6;
 
 interface LoginInput {
   email: string;
-  nome: string;
+  nome?: string;
   telefone?: string;
+  senha?: string;
 }
 
 interface AtualizarPerfilInput {
@@ -54,6 +58,86 @@ export class AuthService {
 
   async login(input: LoginInput) {
     const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
+    const email = (input.email ?? '').trim().toLowerCase();
+    if (!email) {
+      throw new BadRequestException('E-mail é obrigatório.');
+    }
+
+    const senha = (input.senha ?? '').trim();
+    if (!senha) {
+      throw new BadRequestException('Senha é obrigatória.');
+    }
+    if (senha.length < TAMANHO_MINIMO_SENHA) {
+      throw new BadRequestException(
+        `A senha deve ter ao menos ${TAMANHO_MINIMO_SENHA} caracteres.`,
+      );
+    }
+
+    const roleForcado =
+      ownerEmail && email === ownerEmail ? RoleUsuario.DONO : undefined;
+
+    const usuarioExistente = await this.prisma.usuario.findUnique({
+      where: { email },
+    });
+
+    let usuario: Usuario;
+
+    if (!usuarioExistente) {
+      // Cadastro novo.
+      const nome = (input.nome ?? '').trim();
+      if (!nome) {
+        throw new BadRequestException('Nome é obrigatório para o cadastro.');
+      }
+
+      const senhaHash = await bcrypt.hash(senha, 10);
+      usuario = await this.prisma.usuario.create({
+        data: {
+          email,
+          nome,
+          telefone: input.telefone,
+          senha: senhaHash,
+          role: roleForcado ?? RoleUsuario.CLIENTE,
+        },
+      });
+    } else if (!usuarioExistente.senha) {
+      // Conta criada antes de a senha existir (ou via Google): a primeira
+      // tentativa de login com senha define a senha da conta. Isso nao piora
+      // a seguranca em relacao ao login anterior (so por e-mail, sem
+      // nenhuma verificacao) -- so passa a exigir senha dali em diante.
+      const senhaHash = await bcrypt.hash(senha, 10);
+      usuario = await this.prisma.usuario.update({
+        where: { email },
+        data: {
+          senha: senhaHash,
+          nome: (input.nome ?? '').trim() || usuarioExistente.nome,
+          telefone: input.telefone ?? usuarioExistente.telefone,
+          role: roleForcado,
+        },
+      });
+    } else {
+      const senhaValida = await bcrypt.compare(senha, usuarioExistente.senha);
+      if (!senhaValida) {
+        throw new UnauthorizedException('E-mail ou senha inválidos.');
+      }
+
+      usuario =
+        roleForcado && usuarioExistente.role !== roleForcado
+          ? await this.prisma.usuario.update({
+              where: { email },
+              data: { role: roleForcado },
+            })
+          : usuarioExistente;
+    }
+
+    return this.emitirToken(usuario);
+  }
+
+  private async upsertAutenticadoPorProvedor(input: {
+    email: string;
+    nome: string;
+    telefone?: string;
+  }) {
+    const ownerEmail = process.env.OWNER_EMAIL?.trim().toLowerCase();
     const email = input.email.trim().toLowerCase();
     const roleForcado =
       ownerEmail && email === ownerEmail ? RoleUsuario.DONO : undefined;
@@ -73,6 +157,10 @@ export class AuthService {
       },
     });
 
+    return this.emitirToken(usuario);
+  }
+
+  private emitirToken(usuario: Usuario) {
     const payload: AuthPayload = {
       id: usuario.id,
       email: usuario.email,
@@ -132,7 +220,7 @@ export class AuthService {
       }
     }
 
-    return this.login({
+    return this.upsertAutenticadoPorProvedor({
       email: payload.email,
       nome: payload.name ?? payload.email,
     });
@@ -223,6 +311,24 @@ export class AuthService {
       role: usuario.role,
       profissionalId: usuario.profissionalId,
     };
+  }
+
+  async resetarSenha(usuarioId: number) {
+    if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+      throw new BadRequestException('Usuário informado é inválido.');
+    }
+
+    // Nao ha recuperacao de senha por e-mail (o app nao envia e-mails).
+    // Limpar a senha faz a conta voltar ao estado "sem senha definida":
+    // na proxima tentativa de login com e-mail + senha, a nova senha
+    // informada e adotada, igual ao fluxo de primeiro login.
+    const usuario = await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: { senha: null },
+      select: { id: true, nome: true, email: true },
+    });
+
+    return usuario;
   }
 
   async cadastrarBarbeiro(input: CadastrarBarbeiroInput) {

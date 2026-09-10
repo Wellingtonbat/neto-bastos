@@ -7,10 +7,17 @@ import useLocalStorage from '../hooks/useLocalStorage'
 const URL_BASE = process.env.NEXT_PUBLIC_URL_BASE
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
+export interface CredenciaisLogin {
+    nome?: string
+    email: string
+    telefone?: string
+    senha: string
+}
+
 export interface ContextoUsuarioProps {
     carregando: boolean
     usuario: Usuario | null
-    entrar: (usuario: Usuario) => Promise<void>
+    entrar: (credenciais: CredenciaisLogin) => Promise<void>
     entrarComGoogle: (idToken: string) => Promise<void>
     sair: () => void
 }
@@ -54,21 +61,29 @@ export function ProvedorUsuario({ children }: any) {
         [get, set, remove]
     )
 
-    async function entrar(usuario: Usuario) {
+    async function entrar(credenciais: CredenciaisLogin) {
         const res = await fetch(`${URL_BASE}/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                nome: usuario.nome,
-                email: usuario.email,
-                telefone: usuario.telefone,
+                nome: credenciais.nome,
+                email: credenciais.email,
+                telefone: credenciais.telefone,
+                senha: credenciais.senha,
             }),
         })
 
         if (!res.ok) {
-            throw new Error('Não foi possível autenticar o usuário.')
+            let mensagem = 'Não foi possível autenticar o usuário.'
+            try {
+                const erro = await res.json()
+                mensagem = Array.isArray(erro?.message) ? erro.message.join(', ') : (erro?.message ?? mensagem)
+            } catch {
+                // Mantem mensagem padrao quando resposta nao for JSON.
+            }
+            throw new Error(mensagem)
         }
 
         const autenticado = await res.json()

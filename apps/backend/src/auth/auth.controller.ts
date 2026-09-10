@@ -23,8 +23,9 @@ export class AuthController {
     @Body()
     body: {
       email: string;
-      nome: string;
+      nome?: string;
       telefone?: string;
+      senha: string;
     },
   ) {
     return this.authService.login(body);
@@ -70,6 +71,13 @@ export class AuthController {
     },
   ) {
     return this.authService.atualizarPerfil(+id, body);
+  }
+
+  @Patch('usuarios/:id/resetar-senha')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleUsuario.DONO)
+  resetarSenha(@Param('id') id: string) {
+    return this.authService.resetarSenha(+id);
   }
 
   @Post('barbeiros')

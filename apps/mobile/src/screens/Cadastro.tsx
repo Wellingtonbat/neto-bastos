@@ -28,10 +28,11 @@ export default function Cadastro({ navigation }: any) {
     const { usuario, entrar } = useUsuario()
     const { httpPost } = useAPI()
     const {
-        nome, setNome, email, setEmail, telefone, setTelefone, errors, cadastrar,
+        nome, setNome, email, setEmail, telefone, setTelefone, senha, setSenha, errors, cadastrar,
     } = useFormUsuario()
     const [carregando, setCarregando] = useState(false)
     const [carregandoGoogle, setCarregandoGoogle] = useState(false)
+    const [mostrarSenha, setMostrarSenha] = useState(false)
 
     const [requisicaoGoogle, respostaGoogle, iniciarLoginGoogle] = Google.useAuthRequest({
         androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
@@ -94,10 +95,9 @@ export default function Cadastro({ navigation }: any) {
                                 source={require('../../assets/logo.png')}
                                 style={styles.logo}
                             />
-                            <Text style={styles.titulo}>🤘 DO CLASSICO AO ROCK 🤘</Text>
+                            <Text style={styles.titulo}>🤘 DO CLASSICO AO RÚSTICO 🤘</Text>
                             <Text style={styles.descricao}>
-                                Cabelo afiado, barba de lenhador e mãos de motoqueiro, tudo ao som de rock
-                                pesado!
+                                Cabelo afiado, barba de lenhador e mãos de pedreiro!
                             </Text>
                             <View style={styles.formulario}>
                                 <Text style={styles.label}>Nome</Text>
@@ -138,6 +138,36 @@ export default function Cadastro({ navigation }: any) {
                                 {errors.telefone ? (
                                     <Text style={styles.errorText}>{errors.telefone}</Text>
                                 ) : null}
+
+                                <Text style={styles.label}>Senha</Text>
+                                <View style={styles.senhaContainer}>
+                                    <TextInput
+                                        style={[
+                                            styles.input,
+                                            styles.inputSenha,
+                                            errors.senha ? styles.inputError : null,
+                                        ]}
+                                        placeholder="Digite sua senha"
+                                        placeholderTextColor="#666"
+                                        value={senha}
+                                        onChangeText={setSenha}
+                                        secureTextEntry={!mostrarSenha}
+                                        returnKeyType="done"
+                                        onSubmitEditing={handleEntrar}
+                                    />
+                                    <Pressable
+                                        style={styles.botaoMostrarSenha}
+                                        onPress={() => setMostrarSenha((v) => !v)}
+                                    >
+                                        <Text style={styles.textoMostrarSenha}>
+                                            {mostrarSenha ? 'ocultar' : 'mostrar'}
+                                        </Text>
+                                    </Pressable>
+                                </View>
+                                {errors.senha ? <Text style={styles.errorText}>{errors.senha}</Text> : null}
+                                <Text style={styles.dicaSenha}>
+                                    Primeiro acesso? A senha digitada agora será cadastrada para sua conta.
+                                </Text>
                             </View>
                             <Pressable
                                 style={[styles.button, carregando ? styles.buttonDesabilitado : null]}
@@ -206,6 +236,30 @@ const styles = StyleSheet.create({
     },
     errorText: {
         color: 'red',
+        marginBottom: 20,
+        marginLeft: 10,
+        alignSelf: 'flex-start',
+    },
+    senhaContainer: {
+        width: '100%',
+        justifyContent: 'center',
+    },
+    inputSenha: {
+        paddingRight: 70,
+    },
+    botaoMostrarSenha: {
+        position: 'absolute',
+        right: 10,
+        top: 10,
+    },
+    textoMostrarSenha: {
+        color: '#9ca3af',
+        fontSize: 12,
+    },
+    dicaSenha: {
+        color: '#9ca3af',
+        fontSize: 11,
+        marginTop: -14,
         marginBottom: 20,
         marginLeft: 10,
         alignSelf: 'flex-start',

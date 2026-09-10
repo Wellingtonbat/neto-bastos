@@ -83,6 +83,7 @@ model Usuario {
   email          String        @unique
   nome           String
   telefone       String?
+  senha          String?
   pushToken      String?
   role           RoleUsuario   @default(CLIENTE)
   profissionalId Int?          @unique
