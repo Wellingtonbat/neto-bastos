@@ -4,9 +4,15 @@ name: Keep Render services awake
 # evitar o spin-down por inatividade do plano free (que ocorre apos ~15
 # minutos sem trafego). O ping no backend bate num endpoint publico que
 # consulta o banco (Neon), ajudando a manter o banco acordado tambem.
+#
+# So roda das 6h as 23h59 no horario de Brasilia (madrugada fica de fora
+# de proposito: sem cliente agendando corte de cabelo as 3h da manha, nao
+# vale a pena manter as instancias acordadas o tempo todo). O cron do
+# GitHub Actions roda em UTC (Brasilia = UTC-3), entao o campo de hora
+# "9-23,0-2" corresponde a 6h-23h59 no horario de Brasilia.
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/10 9-23,0-2 * * *"
   workflow_dispatch: {}
 
 jobs:
