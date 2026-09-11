@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
 import { Profissional, Servico } from '@neto-bastos/core'
 import useAgendamento from '../data/hooks/useAgendamento'
 import ServicosInput from '../components/agendamento/ServicosInput'
@@ -27,36 +28,38 @@ export default function Agendamentos({ navigation }: any) {
         quantidadeDeSlots,
     } = useAgendamento()
 
-    useEffect(() => {
-        let ativo = true
+    useFocusEffect(
+        useCallback(() => {
+            let ativo = true
 
-        async function carregarDados() {
-            try {
-                setCarregandoDados(true)
-                setErroCarregamento('')
-                const [profissionaisApi, servicosApi] = await Promise.all([
-                    httpGet('profissional?vinculados=true'),
-                    httpGet('servico'),
-                ])
+            async function carregarDados() {
+                try {
+                    setCarregandoDados(true)
+                    setErroCarregamento('')
+                    const [profissionaisApi, servicosApi] = await Promise.all([
+                        httpGet('profissional?vinculados=true'),
+                        httpGet('servico'),
+                    ])
 
-                if (!ativo) return
-                setProfissionaisDisponiveis(profissionaisApi ?? [])
-                setServicosDisponiveis(servicosApi ?? [])
-            } catch (e: any) {
-                if (!ativo) return
-                setErroCarregamento(e?.message ?? 'Nao foi possivel carregar barbeiros e servicos.')
-            } finally {
-                if (!ativo) return
-                setCarregandoDados(false)
+                    if (!ativo) return
+                    setProfissionaisDisponiveis(profissionaisApi ?? [])
+                    setServicosDisponiveis(servicosApi ?? [])
+                } catch (e: any) {
+                    if (!ativo) return
+                    setErroCarregamento(e?.message ?? 'Nao foi possivel carregar barbeiros e servicos.')
+                } finally {
+                    if (!ativo) return
+                    setCarregandoDados(false)
+                }
             }
-        }
 
-        carregarDados()
+            carregarDados()
 
-        return () => {
-            ativo = false
-        }
-    }, [httpGet])
+            return () => {
+                ativo = false
+            }
+        }, [httpGet])
+    )
 
     function profissionalMudou(profissional: Profissional) {
         selecionarProfissional(profissional)

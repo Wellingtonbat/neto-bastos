@@ -45,10 +45,26 @@ export default function Cadastro({ navigation }: any) {
     }, [usuario])
 
     useEffect(() => {
-        if (respostaGoogle?.type !== 'success') return
+        if (!respostaGoogle) return
+
+        if (respostaGoogle.type !== 'success') {
+            if (respostaGoogle.type === 'error') {
+                Alert.alert(
+                    'Erro ao entrar com Google',
+                    respostaGoogle.error?.message ?? JSON.stringify(respostaGoogle.params ?? {}),
+                )
+            }
+            return
+        }
 
         const idToken = respostaGoogle.authentication?.idToken
-        if (!idToken) return
+        if (!idToken) {
+            Alert.alert(
+                'Erro ao entrar com Google',
+                'Resposta sem idToken: ' + JSON.stringify(respostaGoogle.params ?? {}),
+            )
+            return
+        }
 
         entrarComGoogle(idToken)
     }, [respostaGoogle])
