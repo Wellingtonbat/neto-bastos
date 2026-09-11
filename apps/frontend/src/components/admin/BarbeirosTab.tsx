@@ -46,6 +46,11 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
     const [erro, setErro] = useState('')
     const [acaoCarregando, setAcaoCarregando] = useState<AcaoCarregando>(null)
 
+    function reportarErro(mensagem: string) {
+        setErro(mensagem)
+        window.alert(mensagem)
+    }
+
     const [nomeBarbeiro, setNomeBarbeiro] = useState('')
     const [emailBarbeiro, setEmailBarbeiro] = useState('')
     const [telefoneBarbeiro, setTelefoneBarbeiro] = useState('')
@@ -208,7 +213,7 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
 
             setImagemProfissionalCadastro(data.imagemUrl)
         } catch (e: any) {
-            setErro(e?.message ?? 'Falha ao carregar imagem do profissional.')
+            reportarErro(e?.message ?? 'Falha ao carregar imagem do profissional.')
         } finally {
             setCarregandoUploadProfissionalCadastro(false)
             event.target.value = ''
@@ -306,7 +311,7 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
             onProfissionalCriado()
             await Promise.all([carregarBarbeiros(), carregarClientes()])
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel cadastrar.')
+            reportarErro(e?.message ?? 'Nao foi possivel cadastrar.')
         } finally {
             setAcaoCarregando(null)
         }
@@ -356,7 +361,7 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
             onProfissionalCriado()
             await carregarBarbeiros()
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel editar colaborador.')
+            reportarErro(e?.message ?? 'Nao foi possivel editar colaborador.')
         } finally {
             setAcaoCarregando(null)
         }
@@ -371,7 +376,7 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
             setBarbeiroPendenteInativacao(null)
             setConfirmacaoNomeInativacao('')
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel inativar barbeiro.')
+            reportarErro(e?.message ?? 'Nao foi possivel inativar barbeiro.')
         } finally {
             setAcaoCarregando(null)
         }
@@ -384,7 +389,7 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
             await httpPatch(`auth/barbeiros/${usuarioId}/reativar`, {})
             await Promise.all([carregarBarbeiros(), carregarBarbeirosInativos()])
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel reativar barbeiro.')
+            reportarErro(e?.message ?? 'Nao foi possivel reativar barbeiro.')
         } finally {
             setAcaoCarregando(null)
         }
@@ -422,7 +427,7 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
             setProfissionalPerfilId('')
             await Promise.all([carregarClientes(), carregarBarbeiros(), carregarBarbeirosInativos()])
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel alterar o perfil do usuario.')
+            reportarErro(e?.message ?? 'Nao foi possivel alterar o perfil do usuario.')
         } finally {
             setAcaoCarregando(null)
         }
@@ -448,7 +453,7 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
             setAcaoCarregando('RESETAR_SENHA')
             await httpPatch(`auth/usuarios/${usuarioPerfilId}/resetar-senha`, {})
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel resetar a senha do usuario.')
+            reportarErro(e?.message ?? 'Nao foi possivel resetar a senha do usuario.')
         } finally {
             setAcaoCarregando(null)
         }

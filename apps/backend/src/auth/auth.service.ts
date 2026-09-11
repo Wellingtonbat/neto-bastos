@@ -546,7 +546,12 @@ export class AuthService {
       select: { id: true, role: true },
     });
 
-    if (!barbeiroAtual || barbeiroAtual.role !== RoleUsuario.BARBEIRO) {
+    const rolesGerenciaveis: RoleUsuario[] = [
+      RoleUsuario.BARBEIRO,
+      RoleUsuario.DONO,
+      RoleUsuario.FUNCIONARIO,
+    ];
+    if (!barbeiroAtual || !rolesGerenciaveis.includes(barbeiroAtual.role)) {
       throw new BadRequestException('Barbeiro informado nao existe.');
     }
 

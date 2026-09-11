@@ -47,7 +47,7 @@ export default function Passos(props: PassosProps) {
     }
 
     return (
-        <div className="flex flex-col gap-10 items-center lg:items-stretch">
+        <div className="flex flex-col gap-10 items-stretch w-full lg:w-auto">
             <div>{renderizarPassos()}</div>
             <div>{props.children?.[passoAtual] ?? props.children}</div>
             <div className="flex gap-3 select-none">

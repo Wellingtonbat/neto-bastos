@@ -41,7 +41,7 @@ export default function Sumario() {
     }
 
     return (
-        <div className="flex flex-col bg-zinc-950 rounded-lg w-96 lg:w-80">
+        <div className="flex flex-col bg-zinc-950 rounded-lg w-full lg:w-80">
             <div className="flex gap-2 p-4 border-b border-zinc-800">
                 <div className="flex justify-center items-center bg-zinc-800 h-9 w-9 rounded-full">
                     <IconCalendar stroke={1} size={20} />

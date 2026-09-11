@@ -47,8 +47,8 @@ export default function PaginaAgendamento() {
             />
             <div
                 className="
-                    container flex flex-col lg:flex-row 
-                    items-center lg:items-start lg:justify-around 
+                    container flex flex-col lg:flex-row
+                    items-stretch lg:items-start lg:justify-around
                     gap-10 lg:gap-0 py-10
                 "
             >

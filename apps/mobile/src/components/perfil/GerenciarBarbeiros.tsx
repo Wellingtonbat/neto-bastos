@@ -64,6 +64,11 @@ export default function GerenciarBarbeiros() {
     const [profissionais, setProfissionais] = useState<{ id: number; nome: string }[]>([])
     const [erro, setErro] = useState('')
 
+    function reportarErro(mensagem: string) {
+        setErro(mensagem)
+        Alert.alert('Erro', mensagem)
+    }
+
     const [usuarioPerfilId, setUsuarioPerfilId] = useState<number | null>(null)
     const [rolePerfilSelecionado, setRolePerfilSelecionado] = useState<RolePerfil>('CLIENTE')
     const [profissionalPerfilId, setProfissionalPerfilId] = useState<number | null>(null)
@@ -396,7 +401,7 @@ export default function GerenciarBarbeiros() {
                 carregarProfissionais(),
             ])
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel salvar colaborador.')
+            reportarErro(e?.message ?? 'Nao foi possivel salvar colaborador.')
         } finally {
             setCarregando(false)
         }
@@ -436,7 +441,7 @@ export default function GerenciarBarbeiros() {
 
             setImagemProfissional(data.imagemUrl)
         } catch (e: any) {
-            setErro(e?.message ?? 'Falha ao enviar imagem do profissional.')
+            reportarErro(e?.message ?? 'Falha ao enviar imagem do profissional.')
         } finally {
             setCarregandoUploadImagem(false)
         }
@@ -449,7 +454,7 @@ export default function GerenciarBarbeiros() {
             await httpPatch(`auth/barbeiros/${usuarioId}/inativar`, {})
             await Promise.all([carregarBarbeiros(), carregarBarbeirosInativos()])
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel inativar barbeiro.')
+            reportarErro(e?.message ?? 'Nao foi possivel inativar barbeiro.')
         } finally {
             setCarregando(false)
         }
@@ -462,7 +467,7 @@ export default function GerenciarBarbeiros() {
             await httpPatch(`auth/barbeiros/${usuarioId}/reativar`, {})
             await Promise.all([carregarBarbeiros(), carregarBarbeirosInativos()])
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel reativar barbeiro.')
+            reportarErro(e?.message ?? 'Nao foi possivel reativar barbeiro.')
         } finally {
             setCarregando(false)
         }
