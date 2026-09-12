@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "369057901514",
+    "project_id": "neto-bastos",
+    "storage_bucket": "neto-bastos.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:369057901514:android:219d4ad62b1e232c0e3d33",
+        "android_client_info": {
+          "package_name": "com.netobastos.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqtg0VVofbObOiSDfklF4MXirJ7xbpH4E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

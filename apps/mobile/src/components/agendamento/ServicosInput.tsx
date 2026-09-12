@@ -39,11 +39,8 @@ function Opcao(props: { servico: Servico; onClick: (s: Servico) => void; selecio
 export default function ServicosInput(props: ServicosInputProps) {
     const { todosServicos, servicos, servicosMudou } = props
 
-    function alternarMarcacaoServico(servico: Servico) {
-        const encontrado = servicos.find((s) => s.id === servico.id)
-        servicosMudou(
-            encontrado ? servicos.filter((s) => s.id !== servico.id) : [...servicos, servico]
-        )
+    function selecionarServico(servico: Servico) {
+        servicosMudou([servico])
     }
 
     return (
@@ -51,7 +48,7 @@ export default function ServicosInput(props: ServicosInputProps) {
             {todosServicos.map((s) => (
                 <Opcao
                     key={s.id}
-                    onClick={alternarMarcacaoServico}
+                    onClick={selecionarServico}
                     servico={s}
                     selecionado={servicos.some((serv) => serv.id === s.id)}
                 />

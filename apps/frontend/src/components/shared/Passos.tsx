@@ -1,24 +1,30 @@
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
-import { useState } from 'react'
+import { IconChevronLeft } from '@tabler/icons-react'
+import { useEffect, useRef, useState } from 'react'
 
 export interface PassosProps {
     labels: string[]
     children: any
     permiteProximoPasso: boolean
     permiteProximoPassoMudou(valor: boolean): void
+    avancarAutomaticamente?: number
 }
 
 export default function Passos(props: PassosProps) {
     const [passoAtual, setPassoAtual] = useState(0)
+    const ultimoSinalAvanco = useRef(props.avancarAutomaticamente)
+
+    useEffect(() => {
+        if (props.avancarAutomaticamente === undefined) return
+        if (ultimoSinalAvanco.current === props.avancarAutomaticamente) return
+        ultimoSinalAvanco.current = props.avancarAutomaticamente
+
+        setPassoAtual((atual) => Math.min(atual + 1, (props.children?.length ?? 1) - 1))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.avancarAutomaticamente])
 
     function passoAnterior() {
         setPassoAtual(passoAtual - 1)
         props.permiteProximoPassoMudou(true)
-    }
-
-    function proximoPasso() {
-        setPassoAtual(passoAtual + 1)
-        props.permiteProximoPassoMudou(false)
     }
 
     function renderizarPassos() {
@@ -31,7 +37,7 @@ export default function Passos(props: PassosProps) {
                                 key={i}
                                 className={`
                                     flex justify-center items-center w-9 h-9 p-1 rounded-full font-bold
-                                    ${i === passoAtual ? 'bg-white text-black' : 'text-zinc-500 bg-zinc-700'} 
+                                    ${i === passoAtual ? 'bg-white text-black' : 'text-zinc-500 bg-zinc-700'}
                                 `}
                             >
                                 {i + 1}
@@ -58,17 +64,6 @@ export default function Passos(props: PassosProps) {
                 >
                     <IconChevronLeft size={20} />
                     <span>Anterior</span>
-                </button>
-                <button
-                    onClick={proximoPasso}
-                    disabled={
-                        passoAtual === (props.children?.length ?? 0) - 1 ||
-                        !props.permiteProximoPasso
-                    }
-                    className="flex gap-1 items-center bg-zinc-700 text-sm text-white px-4 py-1.5 rounded-md disabled:opacity-30"
-                >
-                    <span>Próximo</span>
-                    <IconChevronRight size={20} />
                 </button>
             </div>
         </div>

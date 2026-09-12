@@ -1,5 +1,5 @@
 import { StyleSheet, Text, Pressable, View } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 export interface PassosProps {
     children: any
@@ -7,21 +7,26 @@ export interface PassosProps {
     permiteProximoPasso: boolean
     permiteProximoPassoMudou(valor: boolean): void
     finalizar(): void
+    avancarAutomaticamente?: number
 }
 
 export default function Passos(props: PassosProps) {
     const [passoAtual, setPassoAtual] = useState(0)
+    const ultimoSinalAvanco = useRef(props.avancarAutomaticamente)
+
+    useEffect(() => {
+        if (props.avancarAutomaticamente === undefined) return
+        if (ultimoSinalAvanco.current === props.avancarAutomaticamente) return
+        ultimoSinalAvanco.current = props.avancarAutomaticamente
+
+        setPassoAtual((atual) => Math.min(atual + 1, props.labels.length - 1))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.avancarAutomaticamente])
 
     function passoAnterior() {
         if (passoAtual <= 0) return
         setPassoAtual(passoAtual - 1)
         props.permiteProximoPassoMudou(true)
-    }
-
-    function proximoPasso() {
-        if (passoAtual >= props.labels.length - 1) return
-        setPassoAtual(passoAtual + 1)
-        props.permiteProximoPassoMudou(false)
     }
 
     function renderizarPassos() {
@@ -80,11 +85,9 @@ export default function Passos(props: PassosProps) {
             <View>{props.children?.[passoAtual]}</View>
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                 {renderizarBotao('Anterior', passoAtual > 0, passoAnterior)}
-                {renderizarBotao(
-                    'Próximo',
-                    props.permiteProximoPasso,
-                    passoAtual === props.labels.length - 1 ? props.finalizar : proximoPasso
-                )}
+                {passoAtual === props.labels.length - 1
+                    ? renderizarBotao('Próximo', props.permiteProximoPasso, props.finalizar)
+                    : null}
             </View>
         </View>
     )

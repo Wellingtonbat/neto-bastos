@@ -11,6 +11,7 @@ import useAPI from '../data/hooks/useAPI'
 
 export default function Agendamentos({ navigation }: any) {
     const [permiteProximoPasso, setPermiteProximoPasso] = useState<boolean>(false)
+    const [avancarAutomaticamente, setAvancarAutomaticamente] = useState(0)
     const [navegando, setNavegando] = useState(false)
     const [profissionaisDisponiveis, setProfissionaisDisponiveis] = useState<Profissional[]>([])
     const [servicosDisponiveis, setServicosDisponiveis] = useState<Servico[]>([])
@@ -79,11 +80,13 @@ export default function Agendamentos({ navigation }: any) {
     function profissionalMudou(profissional: Profissional) {
         selecionarProfissional(profissional)
         setPermiteProximoPasso(!!profissional)
+        setAvancarAutomaticamente((valor) => valor + 1)
     }
 
     function servicosMudou(servicos: Servico[]) {
         selecionarServicos(servicos)
         setPermiteProximoPasso(servicos.length > 0)
+        setAvancarAutomaticamente((valor) => valor + 1)
     }
 
     function dataMudou(data: Date | null) {
@@ -123,6 +126,7 @@ export default function Agendamentos({ navigation }: any) {
                         permiteProximoPasso={permiteProximoPasso}
                         permiteProximoPassoMudou={setPermiteProximoPasso}
                         finalizar={irParaResumo}
+                        avancarAutomaticamente={avancarAutomaticamente}
                     >
                         <ProfissionalInput
                             profissionais={profissionaisDisponiveis}

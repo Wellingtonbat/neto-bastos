@@ -11,6 +11,7 @@ import Cabecalho from '@/components/shared/Cabecalho'
 
 export default function PaginaAgendamento() {
     const [permiteProximoPasso, setPermiteProximoPasso] = useState<boolean>(false)
+    const [avancarAutomaticamente, setAvancarAutomaticamente] = useState(0)
     const {
         profissional,
         servicos,
@@ -24,11 +25,13 @@ export default function PaginaAgendamento() {
     function profissionalMudou(profissional: Profissional) {
         selecionarProfissional(profissional)
         setPermiteProximoPasso(!!profissional)
+        setAvancarAutomaticamente((valor) => valor + 1)
     }
 
     function servicosMudou(servicos: Servico[]) {
         selecionarServicos(servicos)
         setPermiteProximoPasso(servicos.length > 0)
+        setAvancarAutomaticamente((valor) => valor + 1)
     }
 
     function dataMudou(data: Date) {
@@ -55,6 +58,7 @@ export default function PaginaAgendamento() {
                 <Passos
                     permiteProximoPasso={permiteProximoPasso}
                     permiteProximoPassoMudou={setPermiteProximoPasso}
+                    avancarAutomaticamente={avancarAutomaticamente}
                     labels={[
                         'Selecione o profissional',
                         'Informe os serviços',
