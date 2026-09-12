@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
         color: 'white',
     },
     logo: {
-        marginTop: 20,
+        marginTop: 32,
         width: 200,
         height: 90,
         resizeMode: 'contain',

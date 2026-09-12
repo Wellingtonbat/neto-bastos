@@ -2,7 +2,7 @@ import { ImageBackground, RefreshControl, SafeAreaView, ScrollView, StyleSheet, 
 import { useCallback, useState } from 'react'
 import UltimosAgendamentos from '../components/agendamento/UltimosAgendamentos'
 
-export default function Inicio({ navigation }: any) {
+export default function Inicio({ aoMudarAba }: any) {
     const [refreshing, setRefreshing] = useState(false)
     const [refreshToken, setRefreshToken] = useState(0)
 
@@ -31,7 +31,7 @@ export default function Inicio({ navigation }: any) {
                         <UltimosAgendamentos
                             refreshToken={refreshToken}
                             onRefreshComplete={() => setRefreshing(false)}
-                            aoNovoAgendamento={() => navigation.navigate('Agendamento')}
+                            aoNovoAgendamento={() => aoMudarAba?.('Agendamento')}
                         />
                     </View>
                 </ScrollView>
