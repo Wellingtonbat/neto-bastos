@@ -54,32 +54,30 @@ export default function HorariosInput(props: HorariosInputProps) {
         const selecionado =
             periodoSelecionado.length === props.qtdeHorarios && periodoSelecionado.includes(horario)
 
-        const periodoBloqueado = periodo.some(
-            (h) => horariosOcupados.some((ocupada) => ocupada === h) || jaPassou(h)
-        )
+        const periodoTemReservaOcupada = periodo.some((h) => horariosOcupados.includes(h))
+        const periodoTemHorarioPassado = periodo.some((h) => jaPassou(h))
 
-        const horaIndisponivel = periodoSelecionado.includes(horario)
-        const ocupado = horariosOcupados.includes(horario) || jaPassou(horario)
+        const ocupadoPorReserva = horariosOcupados.includes(horario) || periodoTemReservaOcupada
+        const indisponivel =
+            !ocupadoPorReserva &&
+            (jaPassou(horario) ||
+                periodoTemHorarioPassado ||
+                (!temHorario && periodoSelecionado.includes(horario)))
 
         const getBotaoProps = () => {
-            if (selecionado && !periodoBloqueado && !ocupado) {
+            if (selecionado && !ocupadoPorReserva && !indisponivel) {
                 return {
                     background: '#22c55e',
                     desabilitado: false,
                 }
-            } else if (periodoBloqueado && !ocupado && horaIndisponivel) {
+            } else if (ocupadoPorReserva) {
                 return {
                     background: '#ef4444',
                     desabilitado: true,
                 }
-            } else if (!temHorario && !ocupado && periodoSelecionado.includes(horario)) {
+            } else if (indisponivel) {
                 return {
-                    background: '#ef4444',
-                    desabilitado: true,
-                }
-            } else if (ocupado) {
-                return {
-                    background: '#09090b',
+                    background: '#3f3f46',
                     desabilitado: true,
                 }
             } else {

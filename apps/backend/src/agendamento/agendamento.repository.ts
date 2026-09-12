@@ -47,12 +47,7 @@ export class AgendamentoRepository implements RepositorioAgendamento {
     profissional: number,
     data: Date,
   ): Promise<Agendamento[]> {
-    const ano = data.getFullYear();
-    const mes = data.getUTCMonth();
-    const dia = data.getUTCDate();
-
-    const inicioDoDia = new Date(ano, mes, dia, 0, 0, 0);
-    const fimDoDia = new Date(ano, mes, dia, 23, 59, 59);
+    const { inicioDoDia, fimDoDia } = DataUtils.limitesDoDiaNoFuso(data);
 
     const resultado: any = await this.prismaService.agendamento.findMany({
       where: {
@@ -68,11 +63,20 @@ export class AgendamentoRepository implements RepositorioAgendamento {
     return resultado;
   }
 
-  async buscarTodos(profissionalId?: number, status?: StatusAgendamento) {
+  async buscarTodos(
+    profissionalId?: number,
+    status?: StatusAgendamento,
+    data?: Date,
+  ) {
+    const limitesDoDia = data ? DataUtils.limitesDoDiaNoFuso(data) : undefined;
+
     return this.prismaService.agendamento.findMany({
       where: {
         profissionalId: profissionalId || undefined,
         status: status || undefined,
+        data: limitesDoDia
+          ? { gte: limitesDoDia.inicioDoDia, lte: limitesDoDia.fimDoDia }
+          : undefined,
       },
       include: {
         servicos: true,

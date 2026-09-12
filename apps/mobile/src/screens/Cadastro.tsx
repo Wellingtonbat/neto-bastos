@@ -107,7 +107,7 @@ export default function Cadastro({ navigation }: any) {
                     <ScrollView
                         contentContainerStyle={[
                             styles.scrollConteudo,
-                            { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
+                            { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10 },
                         ]}
                         keyboardShouldPersistTaps="handled"
                     >
@@ -236,19 +236,19 @@ const styles = StyleSheet.create({
     label: {
         color: '#fff',
         alignSelf: 'flex-start',
-        marginBottom: 8,
+        marginBottom: 4,
         marginLeft: 10,
-        fontSize: 16,
+        fontSize: 14,
     },
     input: {
         width: '100%',
         minWidth: 280,
-        height: 40,
+        height: 36,
         backgroundColor: '#1e1e1e',
         borderRadius: 5,
         paddingHorizontal: 10,
         color: '#fff',
-        marginBottom: 20,
+        marginBottom: 12,
     },
     inputError: {
         borderColor: 'red',
@@ -279,14 +279,14 @@ const styles = StyleSheet.create({
     dicaSenha: {
         color: '#9ca3af',
         fontSize: 11,
-        marginTop: -14,
-        marginBottom: 20,
+        marginTop: -6,
+        marginBottom: 12,
         marginLeft: 10,
         alignSelf: 'flex-start',
     },
     button: {
         width: '40%',
-        height: 40,
+        height: 38,
         backgroundColor: '#22c55e',
         borderRadius: 5,
         alignItems: 'center',
@@ -320,13 +320,14 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     formulario: {
-        padding: 40,
+        paddingHorizontal: 24,
+        paddingVertical: 12,
     },
     logo: {
-        marginTop: 20,
-        marginBottom: 20,
-        width: 160,
-        height: 144,
+        marginTop: 6,
+        marginBottom: 8,
+        width: 120,
+        height: 108,
         resizeMode: 'contain',
     },
     conteudo: {
@@ -334,16 +335,16 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     titulo: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: 'bold',
         color: 'white',
-        marginBottom: 10,
+        marginBottom: 6,
     },
     descricao: {
-        fontSize: 14,
+        fontSize: 13,
         color: 'white',
         textAlign: 'center',
-        marginBottom: 20,
+        marginBottom: 10,
         marginHorizontal: 20,
     },
 })

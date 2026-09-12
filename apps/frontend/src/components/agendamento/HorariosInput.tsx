@@ -61,9 +61,17 @@ export default function HorariosInput(props: HorariosInputProps) {
         const selecionado =
             periodoSelecionado.length === props.qtdeHorarios && periodoSelecionado.includes(horario)
         const naoSelecionavel = !temHorarios && periodo.includes(horario)
-        const periodoBloqueado =
-            periodo.includes(horario) && periodo.some((h) => horariosOcupados.includes(h) || jaPassou(h))
-        const ocupado = horariosOcupados.includes(horario) || !diaDisponivel || jaPassou(horario)
+
+        const ocupadoPorReserva =
+            horariosOcupados.includes(horario) ||
+            (periodo.includes(horario) && periodo.some((h) => horariosOcupados.includes(h)))
+        const jaPassouOuIndisponivel =
+            !ocupadoPorReserva &&
+            (jaPassou(horario) ||
+                !diaDisponivel ||
+                naoSelecionavel ||
+                (periodo.includes(horario) && periodo.some((h) => jaPassou(h))))
+        const bloqueado = ocupadoPorReserva || jaPassouOuIndisponivel
 
         return (
             <div
@@ -72,16 +80,16 @@ export default function HorariosInput(props: HorariosInputProps) {
                     'flex justify-center items-center cursor-pointer h-8 border border-zinc-800 rounded select-none',
                     {
                         'bg-yellow-400': destacarHora,
-                        'bg-red-500': naoSelecionavel || periodoBloqueado,
+                        'bg-red-500': ocupadoPorReserva,
                         'text-white bg-green-500': selecionado,
-                        'cursor-not-allowed bg-zinc-800': ocupado,
+                        'cursor-not-allowed bg-zinc-800': jaPassouOuIndisponivel,
                     }
                 )}
+                title={ocupadoPorReserva ? 'Horário ocupado' : jaPassouOuIndisponivel ? 'Horário indisponível' : undefined}
                 onMouseEnter={(_) => setHoraHover(horario)}
                 onMouseLeave={(_) => setHoraHover(null)}
                 onClick={() => {
-                    if (naoSelecionavel) return
-                    if (ocupado || periodoBloqueado) return
+                    if (bloqueado) return
                     props.dataMudou(DataUtils.aplicarHorario(props.data, horario))
                 }}
             >
@@ -89,10 +97,10 @@ export default function HorariosInput(props: HorariosInputProps) {
                     className={cn('text-sm text-zinc-400', {
                         'text-black font-semibold': destacarHora,
                         'text-white font-semibold': selecionado,
-                        'text-zinc-400 font-semibold': ocupado,
+                        'text-zinc-400 font-semibold': jaPassouOuIndisponivel,
                     })}
                 >
-                    {naoSelecionavel || periodoBloqueado || ocupado ? (
+                    {bloqueado ? (
                         <IconX size={18} className="text-white" />
                     ) : (
                         horario

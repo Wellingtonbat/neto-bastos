@@ -23,6 +23,14 @@ export interface AgendamentosTabProps {
 
 type AcaoCarregando = 'ATUALIZAR_STATUS' | 'EXCLUIR_AGENDAMENTO' | null
 
+function hojeYYYYMMDD() {
+    const hoje = new Date()
+    const ano = hoje.getFullYear()
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0')
+    const dia = String(hoje.getDate()).padStart(2, '0')
+    return `${ano}-${mes}-${dia}`
+}
+
 export default function AgendamentosTab(props: AgendamentosTabProps) {
     const { profissionaisAdmin } = props
     const { httpGet, httpPatch, httpDelete } = useAPI()
@@ -44,6 +52,7 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
 
     const [filtroStatus, setFiltroStatus] = useState<'TODOS' | StatusAgendamento>('TODOS')
     const [filtroProfissional, setFiltroProfissional] = useState<string>('todos')
+    const [filtroData, setFiltroData] = useState<string>(hojeYYYYMMDD())
 
     const [clienteSelecionado, setClienteSelecionado] = useState<ClienteAdmin | null>(null)
     const [permiteProximoPasso, setPermiteProximoPasso] = useState(false)
@@ -64,6 +73,7 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
         const params = new URLSearchParams()
         if (filtroStatus !== 'TODOS') params.set('status', filtroStatus)
         if (filtroProfissional !== 'todos') params.set('profissionalId', filtroProfissional)
+        if (filtroData) params.set('data', filtroData)
 
         const query = params.toString()
         const data = await httpGet(`agendamentos${query ? `?${query}` : ''}`)
@@ -85,7 +95,7 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
     useEffect(() => {
         carregarTudo()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filtroStatus, filtroProfissional])
+    }, [filtroStatus, filtroProfissional, filtroData])
 
     function clienteMudou(cliente: ClienteAdmin) {
         setClienteSelecionado(cliente)
@@ -194,7 +204,22 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
             <section className="bg-zinc-800 border border-zinc-700 rounded-lg p-5 space-y-4">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                     <h2 className="text-xl font-bold text-zinc-100">Agenda dos barbeiros</h2>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
+                        <input
+                            type="date"
+                            value={filtroData}
+                            onChange={(e) => setFiltroData(e.target.value)}
+                            className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                        />
+                        {filtroData ? (
+                            <button
+                                onClick={() => setFiltroData('')}
+                                className="button bg-zinc-700"
+                                type="button"
+                            >
+                                Ver todas as datas
+                            </button>
+                        ) : null}
                         <select
                             value={filtroStatus}
                             onChange={(e) => setFiltroStatus(e.target.value as any)}

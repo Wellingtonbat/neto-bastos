@@ -20,6 +20,14 @@ import { Roles } from 'src/auth/roles.decorator';
 import { PrismaService } from 'src/db/prisma.service';
 import { PushNotificationService } from 'src/notificacao/push-notification.service';
 
+// Interpreta uma data no formato "YYYY-MM-DD" como meia-noite no fuso do
+// Brasil, em vez de meia-noite UTC (comportamento padrao de `new Date(str)`
+// para strings so-de-data). Sem isso, "2026-09-13" vira 2026-09-12 21h no
+// horario de Brasilia, fazendo os filtros "do dia" pegarem o dia errado.
+function parseDataBrasilia(data: string): Date {
+  return new Date(`${data}T00:00:00-03:00`);
+}
+
 @Controller('agendamentos')
 export class AgendamentoController {
   constructor(
@@ -68,11 +76,13 @@ export class AgendamentoController {
     @Req() req: any,
     @Query('profissionalId') profissionalId?: string,
     @Query('status') status?: StatusAgendamento,
+    @Query('data') dataParam?: string,
   ) {
     const user = req.user as {
       role: RoleUsuario;
       profissionalId: number | null;
     };
+    const data = dataParam ? parseDataBrasilia(dataParam) : undefined;
 
     if (user.role === RoleUsuario.BARBEIRO) {
       if (!user.profissionalId) {
@@ -80,12 +90,13 @@ export class AgendamentoController {
           'Barbeiro sem vínculo de profissional não pode acessar a agenda.',
         );
       }
-      return this.repo.buscarTodos(user.profissionalId, status);
+      return this.repo.buscarTodos(user.profissionalId, status, data);
     }
 
     return this.repo.buscarTodos(
       profissionalId ? +profissionalId : undefined,
       status,
+      data,
     );
   }
 
@@ -102,7 +113,7 @@ export class AgendamentoController {
     const casoDeUso = new ObterHorariosOcupados(this.repo);
     return casoDeUso.executar(
       +profissional,
-      new Date(dataParam),
+      parseDataBrasilia(dataParam),
       profissionalDb?.tempoSlotMinutos ?? 15,
     );
   }

@@ -71,4 +71,31 @@ export default class DataUtils {
     novaData.setHours(parseInt(partes[0]!), parseInt(partes[1]!));
     return novaData;
   }
+
+  // Calcula inicio/fim (00:00:00 a 23:59:59.999) do dia-calendario de
+  // `data` no fuso informado (Brasil por padrao), independente do fuso do
+  // runtime que executa o codigo. Usado pra filtrar agendamentos "do dia"
+  // sem sofrer o deslocamento de horario de um servidor rodando em UTC.
+  static limitesDoDiaNoFuso(
+    data: Date,
+    fusoHorario: string = FUSO_HORARIO_PADRAO,
+  ): { inicioDoDia: Date; fimDoDia: Date } {
+    const partes = new Intl.DateTimeFormat("en-CA", {
+      timeZone: fusoHorario,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(data);
+
+    const mapa: Record<string, string> = {};
+    for (const parte of partes) {
+      mapa[parte.type] = parte.value;
+    }
+
+    const dataFormatoISO = `${mapa.year}-${mapa.month}-${mapa.day}`;
+    const inicioDoDia = new Date(`${dataFormatoISO}T00:00:00-03:00`);
+    const fimDoDia = new Date(`${dataFormatoISO}T23:59:59.999-03:00`);
+
+    return { inicioDoDia, fimDoDia };
+  }
 }

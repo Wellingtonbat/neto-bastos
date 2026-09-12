@@ -18,6 +18,13 @@ import { useFocusEffect } from '@react-navigation/native'
 
 type AbaAdmin = 'AGENDAMENTOS' | 'SERVICOS' | 'BARBEIROS' | 'AGENDA'
 type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CANCELADO'
+
+function dataYYYYMMDD(data: Date) {
+    const ano = data.getFullYear()
+    const mes = String(data.getMonth() + 1).padStart(2, '0')
+    const dia = String(data.getDate()).padStart(2, '0')
+    return `${ano}-${mes}-${dia}`
+}
 type Acao =
     | 'CARREGANDO'
     | 'ATUALIZAR_STATUS'
@@ -70,6 +77,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
 
     const [filtroStatus, setFiltroStatus] = useState<'TODOS' | StatusAgendamento>('TODOS')
     const [filtroProfissional, setFiltroProfissional] = useState<string>('todos')
+    const [filtroData, setFiltroData] = useState<string>(dataYYYYMMDD(new Date()))
 
     const [carregando, setCarregando] = useState(false)
     const [acao, setAcao] = useState<Acao>(null)
@@ -126,11 +134,12 @@ export default function PainelAdmin(props: PainelAdminProps) {
         const params = new URLSearchParams()
         if (filtroStatus !== 'TODOS') params.set('status', filtroStatus)
         if (filtroProfissional !== 'todos') params.set('profissionalId', filtroProfissional)
+        if (filtroData) params.set('data', filtroData)
 
         const query = params.toString()
         const data = await httpGet(`agendamentos${query ? `?${query}` : ''}`)
         setAgendamentos(data ?? [])
-    }, [filtroProfissional, filtroStatus, httpGet])
+    }, [filtroProfissional, filtroStatus, filtroData, httpGet])
 
     const carregarServicos = useCallback(async () => {
         const data = await httpGet('servico')
@@ -389,6 +398,25 @@ export default function PainelAdmin(props: PainelAdminProps) {
                         }}
                     />
                 ) : null}
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtrosRow}>
+                    {[
+                        { label: 'Hoje', valor: dataYYYYMMDD(new Date()) },
+                        { label: 'Amanhã', valor: dataYYYYMMDD(new Date(Date.now() + 86400000)) },
+                        { label: 'Todas as datas', valor: '' },
+                    ].map((opcao) => {
+                        const selecionado = filtroData === opcao.valor
+                        return (
+                            <Pressable
+                                key={opcao.label}
+                                style={[styles.filtroChip, selecionado ? styles.filtroChipAtivo : null]}
+                                onPress={() => setFiltroData(opcao.valor)}
+                            >
+                                <Text style={styles.filtroChipTexto}>{opcao.label}</Text>
+                            </Pressable>
+                        )
+                    })}
+                </ScrollView>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtrosRow}>
                     {STATUS_OPCOES.map((status) => {
