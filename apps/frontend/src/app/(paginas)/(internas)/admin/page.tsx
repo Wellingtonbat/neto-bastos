@@ -30,6 +30,7 @@ export default function PaginaAdmin() {
             usuario?.role === 'FUNCIONARIO'
         )
     }, [usuario?.role])
+    const ehDono = usuario?.role === 'DONO'
 
     async function carregarProfissionais() {
         const data = await httpGet('profissional')
@@ -90,7 +91,7 @@ export default function PaginaAdmin() {
                     {[
                         { id: 'AGENDAMENTOS', label: 'Agendamentos' },
                         { id: 'SERVICOS', label: 'Servicos' },
-                        { id: 'BARBEIROS', label: 'Barbeiros' },
+                        ...(ehDono ? [{ id: 'BARBEIROS', label: 'Barbeiros' }] : []),
                         { id: 'AGENDA', label: 'Agenda dos barbeiros' },
                     ].map((item) => (
                         <button
@@ -114,13 +115,15 @@ export default function PaginaAdmin() {
                     <ServicosTab />
                 </div>
 
-                <div className={abaAtiva === 'BARBEIROS' ? '' : 'hidden'}>
-                    <BarbeirosTab
-                        profissionaisAdmin={profissionaisAdmin}
-                        usuario={usuario}
-                        onProfissionalCriado={carregarProfissionais}
-                    />
-                </div>
+                {ehDono ? (
+                    <div className={abaAtiva === 'BARBEIROS' ? '' : 'hidden'}>
+                        <BarbeirosTab
+                            profissionaisAdmin={profissionaisAdmin}
+                            usuario={usuario}
+                            onProfissionalCriado={carregarProfissionais}
+                        />
+                    </div>
+                ) : null}
 
                 <div className={abaAtiva === 'AGENDA' ? '' : 'hidden'}>
                     <AgendaTab

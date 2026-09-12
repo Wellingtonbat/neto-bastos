@@ -10,7 +10,6 @@ import {
 import { Usuario } from '@neto-bastos/core'
 import Image from 'next/image'
 import useUsuario from '@/data/hooks/useUsuario'
-import { useRouter } from 'next/navigation'
 
 export interface MenuUsuarioProps {
     usuario: Usuario
@@ -18,9 +17,6 @@ export interface MenuUsuarioProps {
 
 export default function MenuUsuario(props: MenuUsuarioProps) {
     const { sair } = useUsuario()
-    const router = useRouter()
-    const podeAcessarAdmin =
-        props.usuario?.role === 'DONO' || props.usuario?.role === 'BARBEIRO'
 
     return props.usuario ? (
         <DropdownMenu>
@@ -36,17 +32,9 @@ export default function MenuUsuario(props: MenuUsuarioProps) {
                 </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-                <DropdownMenuLabel>Menu Usuário</DropdownMenuLabel>
+                <DropdownMenuLabel>{props.usuario.nome}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/meus-agendamentos')}>
-                    Meus agendamentos
-                </DropdownMenuItem>
-                {podeAcessarAdmin ? (
-                    <DropdownMenuItem onClick={() => router.push('/admin')}>
-                        Área administrativa
-                    </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuItem onClick={sair}>Logout</DropdownMenuItem>
+                <DropdownMenuItem onClick={sair}>Sair</DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     ) : null
