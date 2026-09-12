@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import useProfissionais from '@/data/hooks/useProfissionais'
 import { Profissional } from '@neto-bastos/core'
 import Image from 'next/image'
@@ -41,6 +42,24 @@ function Opcao(props: {
 
 export default function ProfissionalInput(props: ProfissionalInputProps) {
     const { profissionais } = useProfissionais()
+    const profissionalRef = useRef(props.profissional)
+    const profissionalMudouRef = useRef(props.profissionalMudou)
+    profissionalRef.current = props.profissional
+    profissionalMudouRef.current = props.profissionalMudou
+
+    // Resincroniza o profissional ja selecionado com a lista atualizada --
+    // sem isso, editar a agenda/tempo de slot dele no admin (em outra aba
+    // ou apos voltar pra essa pagina) nao refletia aqui, pois o objeto
+    // selecionado ficava congelado com os dados de quando foi clicado.
+    useEffect(() => {
+        const selecionado = profissionalRef.current
+        if (!selecionado) return
+
+        const atualizado = profissionais.find((p) => p.id === selecionado.id)
+        if (atualizado && JSON.stringify(atualizado) !== JSON.stringify(selecionado)) {
+            profissionalMudouRef.current(atualizado)
+        }
+    }, [profissionais])
 
     return (
         <div className="flex flex-col gap-5">

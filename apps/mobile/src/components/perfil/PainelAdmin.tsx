@@ -190,17 +190,19 @@ export default function PainelAdmin(props: PainelAdminProps) {
     )
 
     useEffect(() => {
-        if (profissionais.length === 0) return
+        // So pre-seleciona automaticamente quando ha uma unica opcao
+        // possivel (barbeiro editando a propria agenda). Pra DONO/
+        // FUNCIONARIO, que podem editar qualquer barbeiro, deixamos sem
+        // selecao ate escolher explicitamente -- selecionar o primeiro da
+        // lista por padrao ja causou edicao acidental na agenda errada.
+        if (props.role !== 'BARBEIRO') return
+        if (profissionalAgendaId) return
 
-        const idPadrao =
-            props.role === 'BARBEIRO'
-                ? String(props.profissionalId ?? '')
-                : String(profissionais[0]?.id ?? '')
-
-        if (!profissionalAgendaId && idPadrao) {
+        const idPadrao = String(props.profissionalId ?? '')
+        if (idPadrao) {
             setProfissionalAgendaId(idPadrao)
         }
-    }, [profissionais, profissionalAgendaId, props.profissionalId, props.role])
+    }, [props.profissionalId, props.role, profissionalAgendaId])
 
     useEffect(() => {
         if (!profissionalAgendaSelecionado) return
@@ -343,6 +345,8 @@ export default function PainelAdmin(props: PainelAdminProps) {
                 return
             }
 
+            const nomeBarbeiro = profissionais.find((p) => p.id === profissionalId)?.nome ?? 'barbeiro'
+
             setAcao('SALVAR_AGENDA')
             await httpPatch(`profissional/${profissionalId}/agenda`, {
                 diasTrabalho,
@@ -354,7 +358,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
             })
 
             await carregarProfissionais()
-            Alert.alert('Sucesso', 'Agenda atualizada com sucesso.')
+            Alert.alert('Sucesso', `Agenda de ${nomeBarbeiro} atualizada com sucesso.`)
         } catch (e: any) {
             Alert.alert('Erro', e?.message ?? 'Nao foi possivel salvar a agenda.')
         } finally {

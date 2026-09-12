@@ -121,17 +121,19 @@ export default function AgendaTab(props: AgendaTabProps) {
     ])
 
     useEffect(() => {
-        if (profissionaisAdmin.length === 0) return
+        // So pre-seleciona automaticamente quando ha uma unica opcao possivel
+        // (barbeiro editando a propria agenda). Pra DONO/FUNCIONARIO, que
+        // podem editar qualquer barbeiro, deixamos sem selecao ate a pessoa
+        // escolher explicitamente -- selecionar o primeiro da lista por
+        // padrao ja causou edicao acidental na agenda do barbeiro errado.
+        if (usuario?.role !== 'BARBEIRO') return
+        if (profissionalAgendaId) return
 
-        const idPadrao =
-            usuario?.role === 'BARBEIRO'
-                ? String(usuario.profissionalId ?? '')
-                : String(profissionaisAdmin[0]?.id ?? '')
-
-        if (!profissionalAgendaId && idPadrao) {
+        const idPadrao = String(usuario.profissionalId ?? '')
+        if (idPadrao) {
             setProfissionalAgendaId(idPadrao)
         }
-    }, [profissionaisAdmin, profissionalAgendaId, usuario?.profissionalId, usuario?.role])
+    }, [usuario?.profissionalId, usuario?.role, profissionalAgendaId])
 
     useEffect(() => {
         if (!profissionalAgendaSelecionado) return
@@ -173,8 +175,11 @@ export default function AgendaTab(props: AgendaTabProps) {
             })
 
             onProfissionalAtualizado(atualizado)
+            window.alert(`Agenda de ${atualizado.nome} atualizada com sucesso.`)
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel atualizar a agenda do barbeiro.')
+            const mensagem = e?.message ?? 'Nao foi possivel atualizar a agenda do barbeiro.'
+            setErro(mensagem)
+            window.alert(mensagem)
         } finally {
             setAcaoCarregando(false)
         }
