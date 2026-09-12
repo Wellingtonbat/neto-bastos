@@ -144,7 +144,12 @@ export class AgendamentoController {
 
   @Patch(':id/status')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO, RoleUsuario.CLIENTE)
+  @Roles(
+    RoleUsuario.DONO,
+    RoleUsuario.BARBEIRO,
+    RoleUsuario.FUNCIONARIO,
+    RoleUsuario.CLIENTE,
+  )
   async atualizarStatus(
     @Req() req: any,
     @Param('id') id: string,

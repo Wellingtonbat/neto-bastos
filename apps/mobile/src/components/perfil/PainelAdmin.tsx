@@ -100,6 +100,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const [horaAlmocoFim, setHoraAlmocoFim] = useState('13:00')
 
     const isDono = props.role === 'DONO'
+    const podeExcluir = props.role === 'DONO' || props.role === 'BARBEIRO'
 
     const abasDisponiveis = useMemo(() => {
         const base: AbaAdmin[] = ['AGENDAMENTOS', 'SERVICOS', 'AGENDA']
@@ -484,9 +485,11 @@ export default function PainelAdmin(props: PainelAdminProps) {
                                 </>
                             ) : null}
 
-                            <Pressable style={styles.botaoAcaoDanger} onPress={() => excluirAgendamento(agendamento.id)}>
-                                <Text style={styles.botaoAcaoTexto}>Excluir</Text>
-                            </Pressable>
+                            {podeExcluir ? (
+                                <Pressable style={styles.botaoAcaoDanger} onPress={() => excluirAgendamento(agendamento.id)}>
+                                    <Text style={styles.botaoAcaoTexto}>Excluir</Text>
+                                </Pressable>
+                            ) : null}
                         </View>
                     </View>
                 ))}

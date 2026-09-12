@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Profissional } from '@neto-bastos/core'
 import useAPI from '@/data/hooks/useAPI'
+import useUsuario from '@/data/hooks/useUsuario'
 import useAgendamento from '@/data/hooks/useAgendamento'
 import Passos from '@/components/shared/Passos'
 import Sumario from '@/components/agendamento/Sumario'
@@ -33,6 +34,8 @@ function hojeYYYYMMDD() {
 
 export default function AgendamentosTab(props: AgendamentosTabProps) {
     const { profissionaisAdmin } = props
+    const { usuario } = useUsuario()
+    const podeExcluir = usuario?.role === 'DONO' || usuario?.role === 'BARBEIRO'
     const { httpGet, httpPatch, httpDelete } = useAPI()
     const {
         profissional,
@@ -288,13 +291,15 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
                                             </button>
                                         </>
                                     ) : null}
-                                    <button
-                                        onClick={() => excluirAgendamento(ag.id)}
-                                        disabled={!!acaoCarregando}
-                                        className="button bg-red-700"
-                                    >
-                                        Excluir
-                                    </button>
+                                    {podeExcluir ? (
+                                        <button
+                                            onClick={() => excluirAgendamento(ag.id)}
+                                            disabled={!!acaoCarregando}
+                                            className="button bg-red-700"
+                                        >
+                                            Excluir
+                                        </button>
+                                    ) : null}
                                 </div>
                             </div>
                         ))}
