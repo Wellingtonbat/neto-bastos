@@ -1,8 +1,10 @@
-import { ImageBackground, RefreshControl, SafeAreaView, ScrollView, StyleSheet, View } from 'react-native'
+import { ImageBackground, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useCallback, useState } from 'react'
 import UltimosAgendamentos from '../components/agendamento/UltimosAgendamentos'
+import useUsuario from '../data/hooks/useUsuario'
 
-export default function Inicio({ aoMudarAba }: any) {
+export default function Inicio({ navigation, aoMudarAba }: any) {
+    const { usuario, sair } = useUsuario()
     const [refreshing, setRefreshing] = useState(false)
     const [refreshToken, setRefreshToken] = useState(0)
 
@@ -10,6 +12,14 @@ export default function Inicio({ aoMudarAba }: any) {
         setRefreshing(true)
         setRefreshToken((valor) => valor + 1)
     }, [])
+
+    function sairDaConta() {
+        sair()
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Cadastro' }],
+        })
+    }
 
     return (
         <ImageBackground
@@ -27,6 +37,11 @@ export default function Inicio({ aoMudarAba }: any) {
                         />
                     }
                 >
+                    {usuario?.role === 'CLIENTE' ? (
+                        <Pressable style={styles.botaoSair} onPress={sairDaConta}>
+                            <Text style={styles.textoSair}>Sair</Text>
+                        </Pressable>
+                    ) : null}
                     <View style={styles.view}>
                         <UltimosAgendamentos
                             refreshToken={refreshToken}
@@ -59,5 +74,17 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
         width: '100%',
         height: '100%',
+    },
+    botaoSair: {
+        alignSelf: 'flex-end',
+        marginTop: 8,
+        marginRight: 16,
+        paddingVertical: 4,
+        paddingHorizontal: 10,
+    },
+    textoSair: {
+        color: '#e4e4e7',
+        fontSize: 13,
+        textDecorationLine: 'underline',
     },
 })

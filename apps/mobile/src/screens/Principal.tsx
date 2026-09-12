@@ -4,15 +4,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Inicio from './Inicio'
 import Agendamento from './Agendamento'
 import Usuario from './Usuario'
+import MinhaAgenda from './MinhaAgenda'
 import Icone from '../components/shared/Icone'
 import useUsuario from '../data/hooks/useUsuario'
 
-type Aba = 'Inicio' | 'Agendamento' | 'Usuario'
+type Aba = 'Inicio' | 'Agendamento' | 'MinhaAgenda' | 'Usuario'
 
 export default function Principal({ navigation, route }: any) {
     const { usuario } = useUsuario()
     const insets = useSafeAreaInsets()
     const [abaAtiva, setAbaAtiva] = useState<Aba>(route?.params?.abaInicial ?? 'Inicio')
+
+    const ehDono = usuario?.role === 'DONO'
+    const ehEquipe = ehDono || usuario?.role === 'BARBEIRO' || usuario?.role === 'FUNCIONARIO'
+    // Tem agenda propria pra gerenciar: qualquer um com barbeiro vinculado
+    // (barbeiro, ou dono que tambem atende) ou funcionario (gerencia a de
+    // todos). Um dono sem barbeiro vinculado nao precisa dessa aba, ja tem
+    // a agenda geral dentro do Adm.
+    const temAgendaPropria = !!usuario?.profissionalId || usuario?.role === 'FUNCIONARIO'
 
     useEffect(() => {
         if (route?.params?.abaInicial) {
@@ -20,11 +29,19 @@ export default function Principal({ navigation, route }: any) {
         }
     }, [route?.params?.abaInicial])
 
-    const labelPerfil = usuario?.role === 'DONO' ? 'Adm' : 'Minha Agenda'
+    useEffect(() => {
+        if (!ehEquipe && abaAtiva === 'Usuario') {
+            setAbaAtiva('Inicio')
+        }
+        if (!temAgendaPropria && abaAtiva === 'MinhaAgenda') {
+            setAbaAtiva('Inicio')
+        }
+    }, [ehEquipe, temAgendaPropria, abaAtiva])
 
     function renderizarConteudo() {
         if (abaAtiva === 'Agendamento') return <Agendamento navigation={navigation} />
-        if (abaAtiva === 'Usuario') return <Usuario navigation={navigation} />
+        if (abaAtiva === 'MinhaAgenda' && temAgendaPropria) return <MinhaAgenda />
+        if (abaAtiva === 'Usuario' && ehEquipe) return <Usuario navigation={navigation} />
         return <Inicio navigation={navigation} aoMudarAba={setAbaAtiva} />
     }
 
@@ -49,7 +66,8 @@ export default function Principal({ navigation, route }: any) {
             <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
                 {tab('Inicio', 'Início', 'home-outline')}
                 {tab('Agendamento', 'Agendamento', 'calendar-outline')}
-                {tab('Usuario', labelPerfil, 'person-outline')}
+                {temAgendaPropria ? tab('MinhaAgenda', 'Minha Agenda', 'briefcase-outline') : null}
+                {ehEquipe ? tab('Usuario', ehDono ? 'Adm' : 'Perfil', 'person-outline') : null}
             </View>
             <View style={styles.conteudo}>{renderizarConteudo()}</View>
         </View>
