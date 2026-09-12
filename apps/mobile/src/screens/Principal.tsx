@@ -4,10 +4,14 @@ import Inicio from './Inicio'
 import Agendamento from './Agendamento'
 import Usuario from './Usuario'
 import Icone from '../components/shared/Icone'
+import useUsuario from '../data/hooks/useUsuario'
 
 const Tab = createBottomTabNavigator()
 
 export default function Principal({ navigation }: any) {
+    const { usuario } = useUsuario()
+    const labelPerfil = usuario?.role === 'DONO' ? 'Adm' : 'Minha Agenda'
+
     function tab(nome: string, componente: any, label: string, icone: string) {
         return (
             <Tab.Screen
@@ -51,7 +55,7 @@ export default function Principal({ navigation }: any) {
         >
             {tab('Inicio', Inicio, 'Início', 'home-outline')}
             {tab('Agendamento', Agendamento, 'Agendamento', 'calendar-outline')}
-            {tab('Usuario', Usuario, 'Adm', 'person-outline')}
+            {tab('Usuario', Usuario, labelPerfil, 'person-outline')}
         </Tab.Navigator>
     )
 }

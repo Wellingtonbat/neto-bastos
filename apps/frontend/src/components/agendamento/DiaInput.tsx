@@ -1,4 +1,5 @@
 import { DataUtils } from '@neto-bastos/core'
+import useAgendamento from '@/data/hooks/useAgendamento'
 
 export interface DiaInputProps {
     data: Date
@@ -6,14 +7,14 @@ export interface DiaInputProps {
 }
 
 export default function DiaInput(props: DiaInputProps) {
-    function renderizarDia(data: Date) {
-        if (data.getDay() === 0) {
-            data.setDate(data.getDate() + 1)
-        }
+    const { profissional } = useAgendamento()
+    const diasTrabalho = profissional?.diasTrabalho ?? [1, 2, 3, 4, 5, 6]
 
+    function renderizarDia(data: Date) {
         const selecionado = data.getDate() === props.data.getDate()
         return (
             <div
+                key={data.getTime()}
                 onClick={() => props.dataMudou(data)}
                 className={`
                     flex-1 flex flex-col items-center gap-2 py-4 cursor-pointer
@@ -28,7 +29,7 @@ export default function DiaInput(props: DiaInputProps) {
                 </div>
                 <div
                     className={`
-                        text-center text-xs font-light uppercase 
+                        text-center text-xs font-light uppercase
                         ${selecionado ? 'bg-black/10' : 'bg-white/10'}
                         py-0.5 px-3 rounded-full
                     `}
@@ -43,9 +44,10 @@ export default function DiaInput(props: DiaInputProps) {
         <div className="flex flex-col gap-5">
             <span className="text-sm uppercase text-zinc-400">Dias Disponíveis</span>
             <div className="flex gap-5 bg-zinc-950 rounded-lg overflow-hidden">
-                {Array.from({ length: 7 })
+                {Array.from({ length: 14 })
                     .map((_, i) => new Date(DataUtils.hoje().getTime() + 86400000 * i))
-                    .filter((date) => date.getDay() !== 0)
+                    .filter((date) => diasTrabalho.includes(date.getDay()))
+                    .slice(0, 7)
                     .map((date) => renderizarDia(date))}
             </div>
         </div>

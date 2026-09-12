@@ -1,5 +1,6 @@
 import { DataUtils } from '@neto-bastos/core'
 import { StyleSheet, Text, Pressable, View } from 'react-native'
+import useAgendamento from '../../data/hooks/useAgendamento'
 
 export interface DiaInputProps {
     data: Date | null
@@ -7,11 +8,10 @@ export interface DiaInputProps {
 }
 
 export default function DiaInput(props: DiaInputProps) {
-    function renderizarDia(data: Date) {
-        if (data.getDay() === 0) {
-            data.setDate(data.getDate() + 1)
-        }
+    const { profissional } = useAgendamento()
+    const diasTrabalho = profissional?.diasTrabalho ?? [1, 2, 3, 4, 5, 6]
 
+    function renderizarDia(data: Date) {
         const selecionado =
             !!props.data &&
             data.getDate() === props.data.getDate() &&
@@ -69,9 +69,10 @@ export default function DiaInput(props: DiaInputProps) {
                 Dias Disponíveis
             </Text>
             <View style={styles.diaContainer}>
-                {Array.from({ length: 7 })
+                {Array.from({ length: 14 })
                     .map((_, i) => new Date(DataUtils.hoje().getTime() + 86400000 * i))
-                    .filter((date) => date.getDay() !== 0)
+                    .filter((date) => diasTrabalho.includes(date.getDay()))
+                    .slice(0, 7)
                     .map((date) => renderizarDia(date))}
             </View>
         </View>

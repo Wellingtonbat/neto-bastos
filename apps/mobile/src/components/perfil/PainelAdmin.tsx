@@ -681,7 +681,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.titulo}>Painel Admin</Text>
+            <Text style={styles.titulo}>{isDono ? 'Painel Admin' : 'Minha Agenda'}</Text>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsRow}>
                 {abasDisponiveis.map((aba) => renderizarAba(aba, aba))}
