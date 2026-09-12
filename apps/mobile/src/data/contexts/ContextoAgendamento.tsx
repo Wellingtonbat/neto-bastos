@@ -41,13 +41,13 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
         setVersaoAgendamentos((v) => v + 1)
     }, [])
 
-    function selecionarProfissional(profissional: Profissional) {
+    const selecionarProfissional = useCallback((profissional: Profissional) => {
         setProfissional(profissional)
-    }
+    }, [])
 
-    function selecionarServicos(servicos: Servico[]) {
+    const selecionarServicos = useCallback((servicos: Servico[]) => {
         setServicos(servicos)
-    }
+    }, [])
 
     function duracaoTotal() {
         const minutosPorSlot = profissional?.tempoSlotMinutos ?? 15
