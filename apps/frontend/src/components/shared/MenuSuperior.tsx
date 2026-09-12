@@ -37,7 +37,7 @@ export default function MenuSuperior() {
     }
 
     return (
-        <header className="self-stretch flex justify-center items-center min-h-24 bg-black/60 relative z-20">
+        <header className="self-stretch flex justify-center items-center min-h-24 bg-black/60 relative z-[60]">
             <nav className="flex items-center justify-between container px-5 lg:px-8 py-3 gap-4">
                 <Logo />
 
