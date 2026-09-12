@@ -438,21 +438,23 @@ export default function PainelAdmin(props: PainelAdminProps) {
                         </Text>
 
                         <View style={styles.acoesRow}>
-                            {agendamento.status !== 'CONFIRMADO' ? (
-                                <Pressable
-                                    style={styles.botaoAcao}
-                                    onPress={() => atualizarStatusAgendamento(agendamento.id, 'CONFIRMADO')}
-                                >
-                                    <Text style={styles.botaoAcaoTexto}>Confirmar</Text>
-                                </Pressable>
-                            ) : null}
+                            {(agendamento.status ?? 'PENDENTE') === 'PENDENTE' ? (
+                                <>
+                                    <Pressable
+                                        style={styles.botaoAcao}
+                                        onPress={() => atualizarStatusAgendamento(agendamento.id, 'CONFIRMADO')}
+                                    >
+                                        <Text style={styles.botaoAcaoTexto}>Confirmar</Text>
+                                    </Pressable>
 
-                            <Pressable
-                                style={styles.botaoAcao}
-                                onPress={() => atualizarStatusAgendamento(agendamento.id, 'CANCELADO')}
-                            >
-                                <Text style={styles.botaoAcaoTexto}>Cancelar</Text>
-                            </Pressable>
+                                    <Pressable
+                                        style={styles.botaoAcao}
+                                        onPress={() => atualizarStatusAgendamento(agendamento.id, 'CANCELADO')}
+                                    >
+                                        <Text style={styles.botaoAcaoTexto}>Cancelar</Text>
+                                    </Pressable>
+                                </>
+                            ) : null}
 
                             <Pressable style={styles.botaoAcaoDanger} onPress={() => excluirAgendamento(agendamento.id)}>
                                 <Text style={styles.botaoAcaoTexto}>Excluir</Text>

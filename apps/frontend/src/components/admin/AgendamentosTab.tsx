@@ -245,20 +245,24 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
                                     <span className="text-xs bg-zinc-700 rounded px-2 py-1">
                                         {STATUS_LABEL[ag.status ?? 'PENDENTE']}
                                     </span>
-                                    <button
-                                        onClick={() => atualizarStatus(ag.id, 'CONFIRMADO')}
-                                        disabled={!!acaoCarregando}
-                                        className="button bg-green-700"
-                                    >
-                                        Confirmar
-                                    </button>
-                                    <button
-                                        onClick={() => atualizarStatus(ag.id, 'CANCELADO')}
-                                        disabled={!!acaoCarregando}
-                                        className="button bg-amber-700"
-                                    >
-                                        Cancelar
-                                    </button>
+                                    {(ag.status ?? 'PENDENTE') === 'PENDENTE' ? (
+                                        <>
+                                            <button
+                                                onClick={() => atualizarStatus(ag.id, 'CONFIRMADO')}
+                                                disabled={!!acaoCarregando}
+                                                className="button bg-green-700"
+                                            >
+                                                Confirmar
+                                            </button>
+                                            <button
+                                                onClick={() => atualizarStatus(ag.id, 'CANCELADO')}
+                                                disabled={!!acaoCarregando}
+                                                className="button bg-amber-700"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </>
+                                    ) : null}
                                     <button
                                         onClick={() => excluirAgendamento(ag.id)}
                                         disabled={!!acaoCarregando}
