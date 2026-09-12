@@ -19,6 +19,7 @@ import React, { useEffect, useState } from 'react'
 import useFormUsuario from '../data/hooks/useFormUsuario'
 import { AntDesign } from '@expo/vector-icons'
 import * as Google from 'expo-auth-session/providers/google'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GOOGLE_ANDROID_CLIENT_ID } from '../data/constants/ambiente'
 
 // Chamado tambem na raiz do app (src/App.tsx), o quanto antes possivel.
@@ -33,6 +34,7 @@ export default function Cadastro({ navigation }: any) {
     const [carregando, setCarregando] = useState(false)
     const [carregandoGoogle, setCarregandoGoogle] = useState(false)
     const [mostrarSenha, setMostrarSenha] = useState(false)
+    const insets = useSafeAreaInsets()
 
     const [requisicaoGoogle, respostaGoogle, iniciarLoginGoogle] = Google.useAuthRequest({
         androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
@@ -103,7 +105,10 @@ export default function Cadastro({ navigation }: any) {
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 >
                     <ScrollView
-                        contentContainerStyle={styles.scrollConteudo}
+                        contentContainerStyle={[
+                            styles.scrollConteudo,
+                            { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
+                        ]}
                         keyboardShouldPersistTaps="handled"
                     >
                         <View style={styles.conteudo}>
@@ -227,7 +232,6 @@ const styles = StyleSheet.create({
     scrollConteudo: {
         flexGrow: 1,
         justifyContent: 'center',
-        paddingVertical: 20,
     },
     label: {
         color: '#fff',

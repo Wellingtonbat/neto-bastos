@@ -1,4 +1,4 @@
-import { Alert, StyleSheet, Text, View, Image } from 'react-native'
+import { Alert, StyleSheet, Text, View, Image, Pressable } from 'react-native'
 import { Agendamento } from '@neto-bastos/core'
 import useAPI from '../../data/hooks/useAPI'
 import React, { useEffect, useState } from 'react'
@@ -10,6 +10,7 @@ import { useFocusEffect } from '@react-navigation/native'
 interface UltimosAgendamentosProps {
     refreshToken?: number
     onRefreshComplete?: () => void
+    aoNovoAgendamento?: () => void
 }
 
 export default function UltimosAgendamentos(props: UltimosAgendamentosProps) {
@@ -92,7 +93,7 @@ export default function UltimosAgendamentos(props: UltimosAgendamentosProps) {
                     <Text style={styles.subtitulo}>Você ainda não tem agendamentos.</Text>
                     <Text style={styles.subtitulo}>Vamos agendar um novo serviço?</Text>
                     <Image
-                        source={require('../../../assets/inicio/garoto-propaganda.png')}
+                        source={require('../../../assets/profissionais/profissional-1.jpg')}
                         style={styles.garotoPropaganda}
                     />
                 </View>
@@ -104,6 +105,11 @@ export default function UltimosAgendamentos(props: UltimosAgendamentosProps) {
         <View style={styles.container}>
             <Image source={require('../../../assets/logo.png')} style={styles.logo} />
             <Text style={styles.titulo}>Fala, {usuario?.nome}!</Text>
+            {props.aoNovoAgendamento ? (
+                <Pressable style={styles.botaoNovoAgendamento} onPress={props.aoNovoAgendamento}>
+                    <Text style={styles.textoBotaoNovoAgendamento}>Novo agendamento</Text>
+                </Pressable>
+            ) : null}
             {renderizarConteudo()}
         </View>
     )
@@ -153,6 +159,17 @@ const styles = StyleSheet.create({
         width: 200,
         height: 90,
         resizeMode: 'contain',
+    },
+    botaoNovoAgendamento: {
+        backgroundColor: '#22c55e',
+        paddingVertical: 10,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+    },
+    textoBotaoNovoAgendamento: {
+        color: 'white',
+        fontWeight: '700',
+        fontSize: 15,
     },
     garotoPropaganda: {
         marginBottom: 20,

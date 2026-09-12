@@ -237,7 +237,12 @@ export class AgendamentoController {
 
     const [barbeiro, cliente] = await Promise.all([
       this.prisma.usuario.findFirst({
-        where: { role: RoleUsuario.BARBEIRO, profissionalId },
+        where: {
+          profissionalId,
+          role: {
+            in: [RoleUsuario.BARBEIRO, RoleUsuario.DONO, RoleUsuario.FUNCIONARIO],
+          },
+        },
         select: { pushToken: true, nome: true },
       }),
       this.prisma.usuario.findFirst({

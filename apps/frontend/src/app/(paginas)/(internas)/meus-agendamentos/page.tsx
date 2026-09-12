@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Agendamento } from '@neto-bastos/core'
 import Cabecalho from '@/components/shared/Cabecalho'
 import useUsuario from '@/data/hooks/useUsuario'
@@ -19,6 +20,11 @@ export default function PaginaMeusAgendamentos() {
     const [agendamentos, setAgendamentos] = useState<AgendamentoComStatus[]>([])
     const [erro, setErro] = useState('')
     const [cancelandoId, setCancelandoId] = useState<number | null>(null)
+
+    function reportarErro(mensagem: string) {
+        setErro(mensagem)
+        window.alert(mensagem)
+    }
 
     async function carregar() {
         try {
@@ -44,7 +50,7 @@ export default function PaginaMeusAgendamentos() {
             await httpPatch(`agendamentos/${id}/status`, { status: 'CANCELADO' })
             await carregar()
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel cancelar o agendamento.')
+            reportarErro(e?.message ?? 'Nao foi possivel cancelar o agendamento.')
         } finally {
             setCancelandoId(null)
         }
@@ -121,6 +127,10 @@ export default function PaginaMeusAgendamentos() {
                         {erro}
                     </div>
                 ) : null}
+
+                <Link href="/agendamento" className="button bg-green-600 inline-block w-fit">
+                    Novo agendamento
+                </Link>
 
                 {renderizarLista('Pendentes', pendentes, true)}
                 {renderizarLista('Confirmados', confirmados, true)}

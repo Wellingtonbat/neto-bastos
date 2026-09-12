@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { Profissional, Servico } from '@neto-bastos/core'
@@ -28,6 +28,11 @@ export default function Agendamentos({ navigation }: any) {
         quantidadeDeSlots,
     } = useAgendamento()
 
+    const profissionalRef = useRef(profissional)
+    useEffect(() => {
+        profissionalRef.current = profissional
+    }, [profissional])
+
     useFocusEffect(
         useCallback(() => {
             let ativo = true
@@ -44,6 +49,16 @@ export default function Agendamentos({ navigation }: any) {
                     if (!ativo) return
                     setProfissionaisDisponiveis(profissionaisApi ?? [])
                     setServicosDisponiveis(servicosApi ?? [])
+
+                    const profissionalSelecionado = profissionalRef.current
+                    if (profissionalSelecionado) {
+                        const profissionalAtualizado = (profissionaisApi ?? []).find(
+                            (p: Profissional) => p.id === profissionalSelecionado.id
+                        )
+                        if (profissionalAtualizado) {
+                            selecionarProfissional(profissionalAtualizado)
+                        }
+                    }
                 } catch (e: any) {
                     if (!ativo) return
                     setErroCarregamento(e?.message ?? 'Nao foi possivel carregar barbeiros e servicos.')
@@ -58,7 +73,7 @@ export default function Agendamentos({ navigation }: any) {
             return () => {
                 ativo = false
             }
-        }, [httpGet])
+        }, [httpGet, selecionarProfissional])
     )
 
     function profissionalMudou(profissional: Profissional) {

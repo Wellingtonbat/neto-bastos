@@ -155,7 +155,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
         return () => {
             ativo = false
         }
-    }, [data, profissional, obterHorariosOcupados])
+    }, [data, profissional, obterHorariosOcupados, versaoAgendamentos])
 
     return (
         <ContextoAgendamento.Provider
