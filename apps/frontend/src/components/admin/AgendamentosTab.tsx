@@ -1,8 +1,15 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { Profissional, Servico } from '@neto-bastos/core'
+import { useEffect, useState } from 'react'
+import { Profissional } from '@neto-bastos/core'
 import useAPI from '@/data/hooks/useAPI'
+import useAgendamento from '@/data/hooks/useAgendamento'
+import Passos from '@/components/shared/Passos'
+import Sumario from '@/components/agendamento/Sumario'
+import ClienteInput from '@/components/agendamento/ClienteInput'
+import ProfissionalInput from '@/components/agendamento/ProfissionalInput'
+import ServicosInput from '@/components/agendamento/ServicosInput'
+import DataInput from '@/components/agendamento/DataInput'
 import {
     AgendamentoComStatus,
     ClienteAdmin,
@@ -14,19 +21,23 @@ export interface AgendamentosTabProps {
     profissionaisAdmin: Profissional[]
 }
 
-type AcaoCarregando =
-    | 'CRIAR_AGENDAMENTO'
-    | 'ATUALIZAR_STATUS'
-    | 'EXCLUIR_AGENDAMENTO'
-    | null
+type AcaoCarregando = 'ATUALIZAR_STATUS' | 'EXCLUIR_AGENDAMENTO' | null
 
 export default function AgendamentosTab(props: AgendamentosTabProps) {
     const { profissionaisAdmin } = props
-    const { httpGet, httpPost, httpPatch, httpDelete } = useAPI()
+    const { httpGet, httpPatch, httpDelete } = useAPI()
+    const {
+        profissional,
+        servicos,
+        data,
+        selecionarProfissional,
+        selecionarServicos,
+        selecionarData,
+        quantidadeDeSlots,
+    } = useAgendamento()
 
     const [agendamentos, setAgendamentos] = useState<AgendamentoComStatus[]>([])
     const [clientes, setClientes] = useState<ClienteAdmin[]>([])
-    const [servicos, setServicos] = useState<Servico[]>([])
     const [carregando, setCarregando] = useState(true)
     const [acaoCarregando, setAcaoCarregando] = useState<AcaoCarregando>(null)
     const [erro, setErro] = useState('')
@@ -34,30 +45,14 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
     const [filtroStatus, setFiltroStatus] = useState<'TODOS' | StatusAgendamento>('TODOS')
     const [filtroProfissional, setFiltroProfissional] = useState<string>('todos')
 
-    const [clienteIdSelecionado, setClienteIdSelecionado] = useState('')
-    const [filtroCliente, setFiltroCliente] = useState('')
-    const [nomeCliente, setNomeCliente] = useState('')
-    const [emailCliente, setEmailCliente] = useState('')
-    const [telefoneCliente, setTelefoneCliente] = useState('')
-    const [profissionalId, setProfissionalId] = useState<string>('')
-    const [dataHora, setDataHora] = useState('')
-    const [servicosSelecionados, setServicosSelecionados] = useState<number[]>([])
+    const [clienteSelecionado, setClienteSelecionado] = useState<ClienteAdmin | null>(null)
+    const [permiteProximoPasso, setPermiteProximoPasso] = useState(false)
+    const [avancarAutomaticamente, setAvancarAutomaticamente] = useState(0)
+    const [reiniciarPassos, setReiniciarPassos] = useState(0)
 
-    const clientesFiltrados = useMemo(() => {
-        const termo = filtroCliente.trim().toLowerCase()
-        if (!termo) return clientes
-
-        return clientes.filter((cliente) => {
-            return (
-                cliente.nome.toLowerCase().includes(termo) ||
-                cliente.email.toLowerCase().includes(termo)
-            )
-        })
-    }, [clientes, filtroCliente])
-
-    async function carregarServicos() {
-        const data = await httpGet('servico')
-        setServicos(data ?? [])
+    function reportarErro(mensagem: string) {
+        setErro(mensagem)
+        window.alert(mensagem)
     }
 
     async function carregarClientes() {
@@ -79,7 +74,7 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
         try {
             setCarregando(true)
             setErro('')
-            await Promise.all([carregarServicos(), carregarAgendamentos(), carregarClientes()])
+            await Promise.all([carregarAgendamentos(), carregarClientes()])
         } catch (e: any) {
             setErro(e?.message ?? 'Nao foi possivel carregar os dados.')
         } finally {
@@ -92,58 +87,34 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filtroStatus, filtroProfissional])
 
-    function selecionarCliente(clienteId: string) {
-        setClienteIdSelecionado(clienteId)
-        const cliente = clientes.find((c) => String(c.id) === clienteId)
-
-        if (!cliente) {
-            setNomeCliente('')
-            setEmailCliente('')
-            setTelefoneCliente('')
-            return
-        }
-
-        setNomeCliente(cliente.nome)
-        setEmailCliente(cliente.email)
-        setTelefoneCliente(cliente.telefone ?? '')
+    function clienteMudou(cliente: ClienteAdmin) {
+        setClienteSelecionado(cliente)
+        setAvancarAutomaticamente((valor) => valor + 1)
     }
 
-    function alternarServico(id: number) {
-        setServicosSelecionados((atual) =>
-            atual.includes(id) ? atual.filter((s) => s !== id) : [...atual, id]
-        )
+    function profissionalMudou(profissional: Profissional) {
+        selecionarProfissional(profissional)
+        setPermiteProximoPasso(!!profissional)
+        setAvancarAutomaticamente((valor) => valor + 1)
     }
 
-    async function criarAgendamento() {
-        try {
-            setErro('')
-            setAcaoCarregando('CRIAR_AGENDAMENTO')
-            if (!emailCliente || !profissionalId || !dataHora || servicosSelecionados.length === 0) {
-                setErro('Preencha todos os campos para agendar.')
-                return
-            }
+    function servicosMudou(servicos: any[]) {
+        selecionarServicos(servicos)
+        setPermiteProximoPasso(servicos.length > 0)
+        setAvancarAutomaticamente((valor) => valor + 1)
+    }
 
-            await httpPost('agendamentos', {
-                emailCliente,
-                data: new Date(dataHora),
-                profissional: { id: Number(profissionalId) },
-                servicos: servicosSelecionados.map((id) => ({ id })),
-            })
+    function dataMudou(data: Date) {
+        selecionarData(data)
+        const horaValida = data.getHours() >= 8 && data.getHours() <= 21
+        setPermiteProximoPasso(horaValida)
+    }
 
-            setClienteIdSelecionado('')
-            setFiltroCliente('')
-            setNomeCliente('')
-            setEmailCliente('')
-            setTelefoneCliente('')
-            setProfissionalId('')
-            setDataHora('')
-            setServicosSelecionados([])
-            await carregarAgendamentos()
-        } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel criar o agendamento.')
-        } finally {
-            setAcaoCarregando(null)
-        }
+    function agendamentoCriadoComSucesso() {
+        setClienteSelecionado(null)
+        setPermiteProximoPasso(false)
+        setReiniciarPassos((valor) => valor + 1)
+        carregarAgendamentos()
     }
 
     async function atualizarStatus(id: number, status: StatusAgendamento) {
@@ -153,7 +124,7 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
             await httpPatch(`agendamentos/${id}/status`, { status })
             await carregarAgendamentos()
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel atualizar o status.')
+            reportarErro(e?.message ?? 'Nao foi possivel atualizar o status.')
         } finally {
             setAcaoCarregando(null)
         }
@@ -166,7 +137,7 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
             await httpDelete(`agendamentos/${id}`)
             await carregarAgendamentos()
         } catch (e: any) {
-            setErro(e?.message ?? 'Nao foi possivel excluir o agendamento.')
+            reportarErro(e?.message ?? 'Nao foi possivel excluir o agendamento.')
         } finally {
             setAcaoCarregando(null)
         }
@@ -188,87 +159,36 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
 
             <section className="bg-zinc-800 border border-zinc-700 rounded-lg p-5 space-y-4 mb-6">
                 <h2 className="text-xl font-bold text-zinc-100">Novo agendamento para cliente</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <input
-                        value={filtroCliente}
-                        onChange={(e) => setFiltroCliente(e.target.value)}
-                        placeholder="Buscar cliente por nome ou e-mail"
-                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 lg:col-span-2"
-                    />
-
-                    <select
-                        value={clienteIdSelecionado}
-                        onChange={(e) => selecionarCliente(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-8">
+                    <Passos
+                        permiteProximoPasso={permiteProximoPasso}
+                        permiteProximoPassoMudou={setPermiteProximoPasso}
+                        avancarAutomaticamente={avancarAutomaticamente}
+                        reiniciar={reiniciarPassos}
+                        labels={['Cliente', 'Profissional', 'Serviço', 'Horário']}
                     >
-                        <option value="">Selecione o cliente</option>
-                        {clientesFiltrados.map((cliente) => (
-                            <option key={cliente.id} value={cliente.id}>
-                                {cliente.nome} - {cliente.email}
-                            </option>
-                        ))}
-                    </select>
-
-                    <input
-                        value={nomeCliente}
-                        readOnly
-                        placeholder="Nome do cliente"
-                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-zinc-300"
-                    />
-
-                    <input
-                        value={emailCliente}
-                        readOnly
-                        placeholder="E-mail do cliente"
-                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-zinc-300"
-                    />
-
-                    <input
-                        value={telefoneCliente}
-                        readOnly
-                        placeholder="Telefone do cliente"
-                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-zinc-300"
-                    />
-
-                    <select
-                        value={profissionalId}
-                        onChange={(e) => setProfissionalId(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
-                    >
-                        <option value="">Selecione o barbeiro</option>
-                        {profissionaisAdmin.map((p: Profissional) => (
-                            <option key={p.id} value={p.id}>
-                                {p.nome}
-                            </option>
-                        ))}
-                    </select>
-                    <input
-                        type="datetime-local"
-                        value={dataHora}
-                        onChange={(e) => setDataHora(e.target.value)}
-                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                        <ClienteInput
+                            clientes={clientes}
+                            cliente={clienteSelecionado}
+                            clienteMudou={clienteMudou}
+                        />
+                        <ProfissionalInput
+                            profissional={profissional}
+                            profissionalMudou={profissionalMudou}
+                        />
+                        <ServicosInput servicos={servicos} servicosMudou={servicosMudou} />
+                        <DataInput
+                            data={data}
+                            dataMudou={dataMudou}
+                            quantidadeDeSlots={quantidadeDeSlots()}
+                        />
+                    </Passos>
+                    <Sumario
+                        emailCliente={clienteSelecionado?.email}
+                        nomeCliente={clienteSelecionado?.nome ?? ''}
+                        aoAgendarComSucesso={agendamentoCriadoComSucesso}
                     />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {servicos.map((s) => (
-                        <label
-                            key={s.id}
-                            className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
-                        >
-                            <input
-                                type="checkbox"
-                                checked={servicosSelecionados.includes(s.id)}
-                                onChange={() => alternarServico(s.id)}
-                            />
-                            <span>{s.nome}</span>
-                        </label>
-                    ))}
-                </div>
-
-                <button onClick={criarAgendamento} className="button bg-green-600">
-                    {acaoCarregando === 'CRIAR_AGENDAMENTO' ? 'Agendando...' : 'Agendar para cliente'}
-                </button>
             </section>
 
             <section className="bg-zinc-800 border border-zinc-700 rounded-lg p-5 space-y-4">

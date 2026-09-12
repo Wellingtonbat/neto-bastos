@@ -19,7 +19,8 @@ interface ContextoAgendamentoProps {
     selecionarServicos(servicos: Servico[]): void
     selecionarData(data: Date | null): void
     solicitarAtualizacaoAgendamentos(): void
-    agendar(): Promise<void>
+    agendar(emailClienteOverride?: string): Promise<void>
+    limpar(): void
 }
 
 export const ContextoAgendamento = createContext({} as ContextoAgendamentoProps)
@@ -75,8 +76,9 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
         return totalDeSlots
     }
 
-    async function agendar() {
-        if (!usuario?.email) {
+    async function agendar(emailClienteOverride?: string) {
+        const emailCliente = emailClienteOverride ?? usuario?.email
+        if (!emailCliente) {
             throw new Error('Usuario nao autenticado.')
         }
 
@@ -95,7 +97,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
         try {
             setCarregandoAgendamento(true)
             await httpPost('agendamentos', {
-                emailCliente: usuario.email,
+                emailCliente,
                 data,
                 profissional,
                 servicos,
@@ -175,6 +177,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
                 selecionarServicos,
                 solicitarAtualizacaoAgendamentos,
                 agendar,
+                limpar,
             }}
         >
             {children}

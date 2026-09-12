@@ -11,6 +11,7 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
+firebase-adminsdk*.json
 
 # macOS
 .DS_Store

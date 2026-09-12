@@ -7,11 +7,13 @@ export interface PassosProps {
     permiteProximoPasso: boolean
     permiteProximoPassoMudou(valor: boolean): void
     avancarAutomaticamente?: number
+    reiniciar?: number
 }
 
 export default function Passos(props: PassosProps) {
     const [passoAtual, setPassoAtual] = useState(0)
     const ultimoSinalAvanco = useRef(props.avancarAutomaticamente)
+    const ultimoSinalReinicio = useRef(props.reiniciar)
 
     useEffect(() => {
         if (props.avancarAutomaticamente === undefined) return
@@ -21,6 +23,15 @@ export default function Passos(props: PassosProps) {
         setPassoAtual((atual) => Math.min(atual + 1, (props.children?.length ?? 1) - 1))
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.avancarAutomaticamente])
+
+    useEffect(() => {
+        if (props.reiniciar === undefined) return
+        if (ultimoSinalReinicio.current === props.reiniciar) return
+        ultimoSinalReinicio.current = props.reiniciar
+
+        setPassoAtual(0)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.reiniciar])
 
     function passoAnterior() {
         setPassoAtual(passoAtual - 1)

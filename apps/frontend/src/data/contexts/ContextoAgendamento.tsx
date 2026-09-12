@@ -15,7 +15,8 @@ interface ContextoAgendamentoProps {
     selecionarProfissional(profissional: Profissional): void
     selecionarServicos(servicos: Servico[]): void
     selecionarData(data: Date): void
-    agendar(): Promise<void>
+    agendar(emailClienteOverride?: string): Promise<void>
+    limpar(): void
 }
 
 export const ContextoAgendamento = createContext({} as ContextoAgendamentoProps)
@@ -64,11 +65,12 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
         return totalDeSlots
     }
 
-    async function agendar() {
-        if (!usuario?.email) return
+    async function agendar(emailClienteOverride?: string) {
+        const emailCliente = emailClienteOverride ?? usuario?.email
+        if (!emailCliente) return
 
         await httpPost('agendamentos', {
-            emailCliente: usuario.email,
+            emailCliente,
             data: data!,
             profissional: profissional!,
             servicos: servicos,
@@ -119,6 +121,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
                 quantidadeDeSlots,
                 selecionarServicos,
                 agendar,
+                limpar,
             }}
         >
             {children}

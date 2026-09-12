@@ -4,7 +4,13 @@ import { useState } from 'react'
 import useAgendamento from '@/data/hooks/useAgendamento'
 import { useRouter } from 'next/navigation'
 
-export default function Sumario() {
+export interface SumarioProps {
+    emailCliente?: string
+    nomeCliente?: string
+    aoAgendarComSucesso?: () => void
+}
+
+export default function Sumario(props: SumarioProps = {}) {
     const [carregando, setCarregando] = useState(false)
     const [erroAgendamento, setErroAgendamento] = useState('')
     const { data, profissional, servicos, precoTotal, duracaoTotal, agendar } = useAgendamento()
@@ -14,8 +20,12 @@ export default function Sumario() {
         try {
             setCarregando(true)
             setErroAgendamento('')
-            await agendar()
-            router.push('/agendamento/sucesso')
+            await agendar(props.emailCliente)
+            if (props.aoAgendarComSucesso) {
+                props.aoAgendarComSucesso()
+            } else {
+                router.push('/agendamento/sucesso')
+            }
         } catch (error: any) {
             setErroAgendamento(error?.message ?? 'Não foi possível realizar o agendamento.')
         } finally {
@@ -35,6 +45,7 @@ export default function Sumario() {
     }
 
     function podeFinalizar() {
+        if (props.aoAgendarComSucesso && !props.emailCliente) return false
         if (!profissional) return false
         if (!servicos.length) return false
         return data && data.getHours() >= 8 && data.getHours() <= 21
@@ -56,6 +67,14 @@ export default function Sumario() {
                 </div>
             </div>
             <div className="flex flex-col p-5 gap-6 border-b border-zinc-800">
+                {props.nomeCliente !== undefined ? (
+                    <div className="flex flex-col gap-3">
+                        <span className="text-xs uppercase text-zinc-400">Cliente</span>
+                        <span className="text-sm text-white">
+                            {props.nomeCliente || 'Não selecionado'}
+                        </span>
+                    </div>
+                ) : null}
                 <div className="flex flex-col gap-3">
                     <span className="text-xs uppercase text-zinc-400">Profissional</span>
                     <span className="text-sm text-white">

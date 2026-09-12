@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import useAPI from '@/src/data/hooks/useAPI'
 import GerenciarBarbeiros from './GerenciarBarbeiros'
+import NovoAgendamentoCliente from './NovoAgendamentoCliente'
 import useAgendamento from '@/src/data/hooks/useAgendamento'
 import { useFocusEffect } from '@react-navigation/native'
 
@@ -61,6 +62,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const { httpGet, httpPost, httpPatch, httpDelete } = useAPI()
     const { solicitarAtualizacaoAgendamentos } = useAgendamento()
     const [abaAtiva, setAbaAtiva] = useState<AbaAdmin>('AGENDAMENTOS')
+    const [mostrandoNovoAgendamento, setMostrandoNovoAgendamento] = useState(false)
 
     const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
     const [servicos, setServicos] = useState<Servico[]>([])
@@ -367,6 +369,26 @@ export default function PainelAdmin(props: PainelAdminProps) {
         return (
             <View style={styles.secao}>
                 <Text style={styles.tituloSecao}>Gerenciar Agendamentos</Text>
+
+                <Pressable
+                    style={[styles.diaChip, mostrandoNovoAgendamento ? styles.diaChipAtivo : null, { alignSelf: 'flex-start' }]}
+                    onPress={() => setMostrandoNovoAgendamento((v) => !v)}
+                >
+                    <Text style={styles.diaChipTexto}>
+                        {mostrandoNovoAgendamento ? '✕ Fechar' : '+ Novo agendamento para cliente'}
+                    </Text>
+                </Pressable>
+
+                {mostrandoNovoAgendamento ? (
+                    <NovoAgendamentoCliente
+                        profissionais={profissionais}
+                        servicos={servicos}
+                        aoAgendarComSucesso={() => {
+                            setMostrandoNovoAgendamento(false)
+                            carregarAgendamentos()
+                        }}
+                    />
+                ) : null}
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtrosRow}>
                     {STATUS_OPCOES.map((status) => {
