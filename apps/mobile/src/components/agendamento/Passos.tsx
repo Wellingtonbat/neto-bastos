@@ -96,9 +96,6 @@ export default function Passos(props: PassosProps) {
             <View>{props.children?.[passoAtual]}</View>
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center' }}>
                 {renderizarBotao('Anterior', passoAtual > 0, passoAnterior)}
-                {passoAtual === props.labels.length - 1
-                    ? renderizarBotao('Próximo', props.permiteProximoPasso, props.finalizar)
-                    : null}
             </View>
         </View>
     )

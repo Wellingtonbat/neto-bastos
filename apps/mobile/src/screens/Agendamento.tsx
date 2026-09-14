@@ -96,11 +96,19 @@ export default function Agendamentos({ navigation }: any) {
             return
         }
 
-        const hora = data.getHours()
-        const minuto = data.getMinutes()
-        const horarioFoiSelecionado = !(hora === 0 && minuto === 0)
-        const horaValida = hora >= 8 && hora <= 21 && minuto % 15 === 0
-        setPermiteProximoPasso(horarioFoiSelecionado && horaValida)
+        // A validacao de horario em si (dentro da janela de trabalho, sem
+        // conflito, com slots suficientes) ja e feita no HorariosInput --
+        // ele so chama dataMudou com um horario realmente selecionavel.
+        // Aqui so precisamos distinguir "so o dia foi escolhido" (hora
+        // zerada, vindo do DiaInput) de "um horario de verdade foi clicado".
+        // Nao assumir que os minutos sao sempre multiplos de 15: o tempo de
+        // slot de cada profissional pode gerar outros valores (ex: 40min).
+        const horarioFoiSelecionado = !(data.getHours() === 0 && data.getMinutes() === 0)
+        setPermiteProximoPasso(horarioFoiSelecionado)
+
+        if (horarioFoiSelecionado) {
+            irParaResumo()
+        }
     }
 
     async function irParaResumo() {

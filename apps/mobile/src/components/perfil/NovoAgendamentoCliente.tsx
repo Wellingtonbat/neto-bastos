@@ -74,6 +74,9 @@ export default function NovoAgendamentoCliente(props: NovoAgendamentoClienteProp
         }
         const horaValida = data.getHours() >= 8 && data.getHours() <= 21
         setPermiteProximoPasso(horaValida)
+        if (horaValida) {
+            confirmarAgendamento()
+        }
     }
 
     async function confirmarAgendamento() {
