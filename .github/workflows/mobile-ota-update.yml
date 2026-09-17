@@ -38,4 +38,12 @@ jobs:
         working-directory: apps/mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # Mesmos valores do profile "preview" em apps/mobile/eas.json — nao
+          # sao segredos (prefixo EXPO_PUBLIC_ e sempre embutido no bundle do
+          # cliente), mas precisam estar presentes aqui porque `eas update`
+          # nao le o bloco `env` do eas.json (isso so vale para `eas build`).
+          # Sem eles o bundle publicado cai no fallback localhost e quebra o
+          # app assim que a atualizacao OTA e aplicada.
+          EXPO_PUBLIC_API_BASE_URL: https://neto-bastos.onrender.com
+          EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: 420633978191-ammiui5ge00kvd30tb0un06u8s0jsc0o.apps.googleusercontent.com
         run: npx eas-cli update --branch preview --message "${{ github.event.head_commit.message || github.sha }}" --non-interactive
