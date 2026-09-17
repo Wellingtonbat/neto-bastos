@@ -1,0 +1,41 @@
+name: Publish mobile OTA update
+
+# Publica uma atualizacao OTA (Expo/EAS Update) no branch "preview" sempre
+# que um push na main mexer em codigo JS/TS do app mobile ou do pacote
+# compartilhado @neto-bastos/core (que o mobile consome via dist/).
+#
+# Isso so cobre mudancas JS-only. Mudancas em configuracao nativa (chaves
+# android/ios do apps/mobile/app.json, novos modulos nativos) precisam de
+# um build nativo completo via `eas build`, que continua manual (ver
+# CLAUDE.md) — este workflow nao substitui isso.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/core/**"
+      - ".github/workflows/mobile-ota-update.yml"
+  workflow_dispatch: {}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build @neto-bastos/core
+        run: yarn workspace @neto-bastos/core build
+
+      - name: Publish EAS Update
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli update --branch preview --message "${{ github.event.head_commit.message || github.sha }}" --non-interactive
