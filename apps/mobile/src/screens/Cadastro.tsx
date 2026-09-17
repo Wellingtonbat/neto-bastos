@@ -8,6 +8,7 @@ import {
     ImageBackground,
     Image,
     Alert,
+    Keyboard,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -34,7 +35,21 @@ export default function Cadastro({ navigation }: any) {
     const [carregando, setCarregando] = useState(false)
     const [carregandoGoogle, setCarregandoGoogle] = useState(false)
     const [mostrarSenha, setMostrarSenha] = useState(false)
+    const [tecladoVisivel, setTecladoVisivel] = useState(false)
     const insets = useSafeAreaInsets()
+
+    useEffect(() => {
+        const mostrarEvento = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+        const esconderEvento = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+
+        const assinaturaMostrar = Keyboard.addListener(mostrarEvento, () => setTecladoVisivel(true))
+        const assinaturaEsconder = Keyboard.addListener(esconderEvento, () => setTecladoVisivel(false))
+
+        return () => {
+            assinaturaMostrar.remove()
+            assinaturaEsconder.remove()
+        }
+    }, [])
 
     const [requisicaoGoogle, respostaGoogle, iniciarLoginGoogle] = Google.useAuthRequest({
         androidClientId: GOOGLE_ANDROID_CLIENT_ID || undefined,
@@ -107,6 +122,7 @@ export default function Cadastro({ navigation }: any) {
                     <ScrollView
                         contentContainerStyle={[
                             styles.scrollConteudo,
+                            tecladoVisivel ? styles.scrollConteudoComTeclado : null,
                             { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 10 },
                         ]}
                         keyboardShouldPersistTaps="handled"
@@ -232,6 +248,9 @@ const styles = StyleSheet.create({
     scrollConteudo: {
         flexGrow: 1,
         justifyContent: 'center',
+    },
+    scrollConteudoComTeclado: {
+        justifyContent: 'flex-start',
     },
     label: {
         color: '#fff',
