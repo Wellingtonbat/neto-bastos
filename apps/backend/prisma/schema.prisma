@@ -27,22 +27,60 @@ enum RoleUsuario {
 }
 
 model Profissional {
-  id                   Int           @id @default(autoincrement())
+  id                   Int              @id @default(autoincrement())
   nome                 String
   descricao            String
   imagemUrl            String
   avaliacao            Float
   quantidadeAvaliacoes Int
-  diasTrabalho         Int[]         @default([1, 2, 3, 4, 5, 6])
-  horaInicio           String        @default("08:00")
-  horaFim              String        @default("19:00")
+  diasTrabalho         Int[]            @default([1, 2, 3, 4, 5, 6])
+  horaInicio           String           @default("08:00")
+  horaFim              String           @default("19:00")
   horaAlmocoInicio     String?
   horaAlmocoFim        String?
-  tempoSlotMinutos     Int           @default(15)
+  tempoSlotMinutos     Int              @default(15)
   agendamentos         Agendamento[]
   usuario              Usuario?
+  horariosSemanais     HorarioSemanal[]
+  excecoesAgenda       ExcecaoAgenda[]
 
   @@map("profissional")
+}
+
+// Sobrescreve o horario base do profissional para um dia da semana
+// especifico (ex: "toda segunda a partir das 14h"). So tem efeito em dias
+// que ja estao em Profissional.diasTrabalho -- nao liga dias extras.
+model HorarioSemanal {
+  id               Int          @id @default(autoincrement())
+  profissional     Profissional @relation(fields: [profissionalId], references: [id])
+  profissionalId   Int
+  diaSemana        Int
+  horaInicio       String
+  horaFim          String
+  horaAlmocoInicio String?
+  horaAlmocoFim    String?
+  tempoSlotMinutos Int?
+
+  @@unique([profissionalId, diaSemana])
+  @@map("horario_semanal")
+}
+
+// Sobrescreve o horario (ou fecha a agenda) para uma data especifica do
+// calendario, com prioridade sobre HorarioSemanal e sobre o horario base.
+model ExcecaoAgenda {
+  id               Int          @id @default(autoincrement())
+  profissional     Profissional @relation(fields: [profissionalId], references: [id])
+  profissionalId   Int
+  data             DateTime     @db.Date
+  fechado          Boolean      @default(false)
+  horaInicio       String?
+  horaFim          String?
+  horaAlmocoInicio String?
+  horaAlmocoFim    String?
+  tempoSlotMinutos Int?
+
+  @@unique([profissionalId, data])
+  @@map("excecao_agenda")
 }
 
 model Servico {

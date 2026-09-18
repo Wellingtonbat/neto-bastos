@@ -4,11 +4,21 @@ import { DataUtils } from '@neto-bastos/core'
 import useUsuario from '../hooks/useUsuario'
 import useAPI from '../hooks/useAPI'
 
+export interface HorarioResolvido {
+    fechado: boolean
+    horaInicio: string
+    horaFim: string
+    horaAlmocoInicio: string | null
+    horaAlmocoFim: string | null
+    tempoSlotMinutos: number
+}
+
 interface ContextoAgendamentoProps {
     profissional: Profissional | null
     servicos: Servico[]
     data: Date | null
     horariosOcupados: string[]
+    horarioDoDia: HorarioResolvido | null
     carregandoHorarios: boolean
     carregandoAgendamento: boolean
     versaoAgendamentos: number
@@ -32,6 +42,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
 
     const { usuario } = useUsuario()
     const [horariosOcupados, setHorariosOcupados] = useState<string[]>([])
+    const [horarioDoDia, setHorarioDoDia] = useState<HorarioResolvido | null>(null)
     const [carregandoHorarios, setCarregandoHorarios] = useState(false)
     const [carregandoAgendamento, setCarregandoAgendamento] = useState(false)
     const [versaoAgendamentos, setVersaoAgendamentos] = useState(0)
@@ -112,20 +123,24 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
     function limpar() {
         setData(null)
         setHorariosOcupados([])
+        setHorarioDoDia(null)
         setProfissional(null)
         setServicos([])
+    }
+
+    function dataParaISO(data: Date) {
+        const ano = data.getFullYear()
+        const mes = String(data.getMonth() + 1).padStart(2, '0')
+        const dia = String(data.getDate()).padStart(2, '0')
+        return `${ano}-${mes}-${dia}`
     }
 
     const obterHorariosOcupados = useCallback(
         async function (data: Date, profissional: Profissional): Promise<string[]> {
             try {
                 if (!data || !profissional) return []
-                const ano = data.getFullYear()
-                const mes = String(data.getMonth() + 1).padStart(2, '0')
-                const dia = String(data.getDate()).padStart(2, '0')
-                const dtString = `${ano}-${mes}-${dia}`
                 const ocupacao = await httpGet(
-                    `agendamentos/ocupacao/${profissional!.id}/${dtString}`
+                    `agendamentos/ocupacao/${profissional!.id}/${dataParaISO(data)}`
                 )
                 return ocupacao ?? []
             } catch (e) {
@@ -135,19 +150,39 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
         [httpGet]
     )
 
+    const obterHorarioDoDia = useCallback(
+        async function (data: Date, profissional: Profissional): Promise<HorarioResolvido | null> {
+            try {
+                if (!data || !profissional) return null
+                const resolvido = await httpGet(
+                    `profissional/${profissional!.id}/horario-do-dia?data=${dataParaISO(data)}`
+                )
+                return resolvido ?? null
+            } catch (e) {
+                return null
+            }
+        },
+        [httpGet]
+    )
+
     useEffect(() => {
         if (!data || !profissional) {
             setHorariosOcupados([])
+            setHorarioDoDia(null)
             return
         }
 
         let ativo = true
         setCarregandoHorarios(true)
 
-        obterHorariosOcupados(data, profissional)
-            .then((horarios) => {
+        Promise.all([
+            obterHorariosOcupados(data, profissional),
+            obterHorarioDoDia(data, profissional),
+        ])
+            .then(([horarios, resolvido]) => {
                 if (!ativo) return
                 setHorariosOcupados(horarios)
+                setHorarioDoDia(resolvido)
             })
             .finally(() => {
                 if (!ativo) return
@@ -157,7 +192,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
         return () => {
             ativo = false
         }
-    }, [data, profissional, obterHorariosOcupados, versaoAgendamentos])
+    }, [data, profissional, obterHorariosOcupados, obterHorarioDoDia, versaoAgendamentos])
 
     return (
         <ContextoAgendamento.Provider
@@ -166,6 +201,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
                 profissional,
                 servicos,
                 horariosOcupados,
+                horarioDoDia,
                 carregandoHorarios,
                 carregandoAgendamento,
                 versaoAgendamentos,

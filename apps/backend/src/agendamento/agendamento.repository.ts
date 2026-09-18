@@ -6,6 +6,7 @@ import {
 } from '@neto-bastos/core';
 import { PrismaService } from 'src/db/prisma.service';
 import { StatusAgendamento } from '@prisma/client';
+import { resolverHorarioDoDia } from 'src/profissional/horario-resolvido';
 
 @Injectable()
 export class AgendamentoRepository implements RepositorioAgendamento {
@@ -135,23 +136,6 @@ export class AgendamentoRepository implements RepositorioAgendamento {
   private async validarAgendaProfissional(
     agendamento: Agendamento,
   ): Promise<void> {
-    const profissional = await this.prismaService.profissional.findUnique({
-      where: { id: agendamento.profissional.id },
-      select: {
-        id: true,
-        diasTrabalho: true,
-        horaInicio: true,
-        horaFim: true,
-        horaAlmocoInicio: true,
-        horaAlmocoFim: true,
-        tempoSlotMinutos: true,
-      },
-    });
-
-    if (!profissional) {
-      throw new BadRequestException('Profissional informado nao existe.');
-    }
-
     const data = new Date(agendamento.data);
     if (data.getTime() < Date.now()) {
       throw new BadRequestException(
@@ -159,17 +143,27 @@ export class AgendamentoRepository implements RepositorioAgendamento {
       );
     }
 
-    const { hora, minuto, diaSemana } = DataUtils.horaNoFuso(data);
-    if (!profissional.diasTrabalho.includes(diaSemana)) {
+    const horario = await resolverHorarioDoDia(
+      this.prismaService,
+      agendamento.profissional.id,
+      data,
+    );
+
+    if (!horario) {
+      throw new BadRequestException('Profissional informado nao existe.');
+    }
+
+    if (horario.fechado) {
       throw new BadRequestException(
         'Profissional nao atende no dia selecionado.',
       );
     }
 
-    const [horaInicio, minutoInicio] = profissional.horaInicio
+    const { hora, minuto } = DataUtils.horaNoFuso(data);
+    const [horaInicio, minutoInicio] = horario.horaInicio
       .split(':')
       .map(Number);
-    const [horaFim, minutoFim] = profissional.horaFim.split(':').map(Number);
+    const [horaFim, minutoFim] = horario.horaFim.split(':').map(Number);
     const inicioJanela = horaInicio * 60 + minutoInicio;
     const fimJanela = horaFim * 60 + minutoFim;
 
@@ -183,19 +177,17 @@ export class AgendamentoRepository implements RepositorioAgendamento {
       );
     }
 
-    if (
-      (minutosSelecionados - inicioJanela) % profissional.tempoSlotMinutos !==
-      0
-    ) {
+    if ((minutosSelecionados - inicioJanela) % horario.tempoSlotMinutos !== 0) {
       throw new BadRequestException(
         'Horario invalido para a agenda do profissional.',
       );
     }
 
-    if (profissional.horaAlmocoInicio && profissional.horaAlmocoFim) {
-      const [horaAlmocoInicio, minutoAlmocoInicio] =
-        profissional.horaAlmocoInicio.split(':').map(Number);
-      const [horaAlmocoFim, minutoAlmocoFim] = profissional.horaAlmocoFim
+    if (horario.horaAlmocoInicio && horario.horaAlmocoFim) {
+      const [horaAlmocoInicio, minutoAlmocoInicio] = horario.horaAlmocoInicio
+        .split(':')
+        .map(Number);
+      const [horaAlmocoFim, minutoAlmocoFim] = horario.horaAlmocoFim
         .split(':')
         .map(Number);
       const inicioAlmoco = horaAlmocoInicio * 60 + minutoAlmocoInicio;
