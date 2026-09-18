@@ -12,21 +12,27 @@ export interface HorariosInputProps {
 
 export default function HorariosInput(props: HorariosInputProps) {
     const [horaHover, setHoraHover] = useState<string | null>(null)
-    const { horariosOcupados, profissional } = useAgendamento()
+    const { horariosOcupados, horarioDoDia, profissional } = useAgendamento()
 
-    const horaInicio = profissional?.horaInicio ?? '08:00'
-    const horaFim = profissional?.horaFim ?? '20:00'
-    const tempoSlotMinutos = profissional?.tempoSlotMinutos ?? 15
+    // Enquanto o horario resolvido do dia ainda esta carregando (troca de
+    // data/profissional), usa o horario base como fallback pra evitar um
+    // flash de "sem horarios" -- assim que a resposta chega, o horario por
+    // dia (override semanal/excecao, se houver) assume.
+    const horaInicio = horarioDoDia?.horaInicio ?? profissional?.horaInicio ?? '08:00'
+    const horaFim = horarioDoDia?.horaFim ?? profissional?.horaFim ?? '20:00'
+    const tempoSlotMinutos = horarioDoDia?.tempoSlotMinutos ?? profissional?.tempoSlotMinutos ?? 15
+    const horaAlmocoInicio = horarioDoDia ? horarioDoDia.horaAlmocoInicio : profissional?.horaAlmocoInicio
+    const horaAlmocoFim = horarioDoDia ? horarioDoDia.horaAlmocoFim : profissional?.horaAlmocoFim
     const diasTrabalho = profissional?.diasTrabalho ?? [1, 2, 3, 4, 5, 6]
     const diaSelecionado = props.data.getDay()
-    const diaDisponivel = diasTrabalho.includes(diaSelecionado)
+    const diaDisponivel = horarioDoDia ? !horarioDoDia.fechado : diasTrabalho.includes(diaSelecionado)
 
     const horariosBase = AgendaUtils.horariosPorIntervalo(
         horaInicio,
         horaFim,
         tempoSlotMinutos,
-        profissional?.horaAlmocoInicio,
-        profissional?.horaAlmocoFim
+        horaAlmocoInicio,
+        horaAlmocoFim
     )
     const { manha, tarde, noite } = AgendaUtils.separarPorPeriodo(horariosBase)
 

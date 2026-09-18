@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   Param,
@@ -20,14 +21,23 @@ import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import {
+  JanelaHorarioInput,
+  normalizarJanelaHorario,
+} from './horario-validacao';
+import { resolverHorarioDoDia } from './horario-resolvido';
 
-interface AtualizarAgendaInput {
+interface AtualizarAgendaInput extends JanelaHorarioInput {
   diasTrabalho: number[];
-  horaInicio: string;
-  horaFim: string;
-  horaAlmocoInicio?: string | null;
-  horaAlmocoFim?: string | null;
-  tempoSlotMinutos: number;
+}
+
+interface HorarioSemanalInput extends JanelaHorarioInput {
+  diaSemana: number;
+}
+
+interface ExcecaoAgendaInput extends JanelaHorarioInput {
+  data: string;
+  fechado?: boolean;
 }
 
 interface CriarProfissionalInput {
@@ -163,6 +173,168 @@ export class ProfissionalController {
     @Param('id') id: string,
     @Body() body: AtualizarAgendaInput,
   ) {
+    const profissionalId = this.exigirAcessoAgenda(req, id);
+    const agenda = this.normalizarAgenda(body);
+
+    return this.prisma.profissional.update({
+      where: { id: profissionalId },
+      data: {
+        diasTrabalho: agenda.diasTrabalho,
+        horaInicio: agenda.horaInicio,
+        horaFim: agenda.horaFim,
+        horaAlmocoInicio: agenda.horaAlmocoInicio,
+        horaAlmocoFim: agenda.horaAlmocoFim,
+        tempoSlotMinutos: agenda.tempoSlotMinutos,
+      },
+    });
+  }
+
+  @Get(':id/horario-do-dia')
+  async buscarHorarioDoDia(
+    @Param('id') id: string,
+    @Query('data') dataParam: string,
+  ) {
+    const profissionalId = Number(id);
+    if (!Number.isInteger(profissionalId) || profissionalId <= 0) {
+      throw new BadRequestException('Profissional inválido.');
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataParam ?? '')) {
+      throw new BadRequestException('Data inválida. Use YYYY-MM-DD.');
+    }
+
+    const resolvido = await resolverHorarioDoDia(
+      this.prisma,
+      profissionalId,
+      new Date(`${dataParam}T00:00:00-03:00`),
+    );
+
+    if (!resolvido) {
+      throw new BadRequestException('Profissional informado não existe.');
+    }
+
+    return resolvido;
+  }
+
+  @Get(':id/horarios-semanais')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
+  async listarHorariosSemanais(@Req() req: any, @Param('id') id: string) {
+    const profissionalId = this.exigirAcessoAgenda(req, id);
+    return this.prisma.horarioSemanal.findMany({
+      where: { profissionalId },
+      orderBy: { diaSemana: 'asc' },
+    });
+  }
+
+  @Get(':id/excecoes')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
+  async listarExcecoesAgenda(@Req() req: any, @Param('id') id: string) {
+    const profissionalId = this.exigirAcessoAgenda(req, id);
+    return this.prisma.excecaoAgenda.findMany({
+      where: { profissionalId },
+      orderBy: { data: 'asc' },
+    });
+  }
+
+  @Post(':id/horarios-semanais')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
+  async substituirHorariosSemanais(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: HorarioSemanalInput[],
+  ) {
+    const profissionalId = this.exigirAcessoAgenda(req, id);
+    const itens = Array.isArray(body) ? body : [];
+
+    const diasVistos = new Set<number>();
+    const normalizados = itens.map((item) => {
+      const diaSemana = Number(item?.diaSemana);
+      if (!Number.isInteger(diaSemana) || diaSemana < 0 || diaSemana > 6) {
+        throw new BadRequestException('Dia da semana inválido.');
+      }
+      if (diasVistos.has(diaSemana)) {
+        throw new BadRequestException(
+          'Não é possível repetir o mesmo dia da semana.',
+        );
+      }
+      diasVistos.add(diaSemana);
+
+      const janela = normalizarJanelaHorario(item, {
+        tempoSlotMinutosObrigatorio: false,
+      });
+
+      return { profissionalId, diaSemana, ...janela };
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.horarioSemanal.deleteMany({ where: { profissionalId } }),
+      ...(normalizados.length
+        ? [this.prisma.horarioSemanal.createMany({ data: normalizados })]
+        : []),
+    ]);
+
+    return this.prisma.horarioSemanal.findMany({
+      where: { profissionalId },
+      orderBy: { diaSemana: 'asc' },
+    });
+  }
+
+  @Post(':id/excecoes')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
+  async upsertExcecaoAgenda(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: ExcecaoAgendaInput,
+  ) {
+    const profissionalId = this.exigirAcessoAgenda(req, id);
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(body?.data ?? '')) {
+      throw new BadRequestException('Data inválida. Use YYYY-MM-DD.');
+    }
+    const data = new Date(`${body.data}T00:00:00.000Z`);
+    const fechado = body?.fechado === true;
+
+    const janela = fechado
+      ? {
+          horaInicio: null,
+          horaFim: null,
+          horaAlmocoInicio: null,
+          horaAlmocoFim: null,
+          tempoSlotMinutos: null,
+        }
+      : normalizarJanelaHorario(body, { tempoSlotMinutosObrigatorio: false });
+
+    return this.prisma.excecaoAgenda.upsert({
+      where: { profissionalId_data: { profissionalId, data } },
+      create: { profissionalId, data, fechado, ...janela },
+      update: { fechado, ...janela },
+    });
+  }
+
+  @Delete(':id/excecoes/:data')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
+  async removerExcecaoAgenda(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Param('data') dataParam: string,
+  ) {
+    const profissionalId = this.exigirAcessoAgenda(req, id);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataParam ?? '')) {
+      throw new BadRequestException('Data inválida. Use YYYY-MM-DD.');
+    }
+
+    await this.prisma.excecaoAgenda.deleteMany({
+      where: { profissionalId, data: new Date(`${dataParam}T00:00:00.000Z`) },
+    });
+
+    return { ok: true };
+  }
+
+  private exigirAcessoAgenda(req: any, id: string): number {
     const user = req.user as {
       role: RoleUsuario;
       profissionalId: number | null;
@@ -180,19 +352,7 @@ export class ProfissionalController {
       throw new ForbiddenException('Barbeiro só pode editar a propria agenda.');
     }
 
-    const agenda = this.normalizarAgenda(body);
-
-    return this.prisma.profissional.update({
-      where: { id: profissionalId },
-      data: {
-        diasTrabalho: agenda.diasTrabalho,
-        horaInicio: agenda.horaInicio,
-        horaFim: agenda.horaFim,
-        horaAlmocoInicio: agenda.horaAlmocoInicio,
-        horaAlmocoFim: agenda.horaAlmocoFim,
-        tempoSlotMinutos: agenda.tempoSlotMinutos,
-      },
-    });
+    return profissionalId;
   }
 
   private normalizarAgenda(body: AtualizarAgendaInput) {
@@ -205,101 +365,13 @@ export class ProfissionalController {
       throw new BadRequestException('Informe ao menos um dia de trabalho.');
     }
 
-    const horaInicio = (body?.horaInicio ?? '').trim();
-    const horaFim = (body?.horaFim ?? '').trim();
-    const regexHora = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
-    if (!regexHora.test(horaInicio) || !regexHora.test(horaFim)) {
-      throw new BadRequestException('Hora de inicio/fim invalida. Use HH:mm.');
-    }
-
-    const [hI, mI] = horaInicio.split(':').map(Number);
-    const [hF, mF] = horaFim.split(':').map(Number);
-    const inicio = hI * 60 + mI;
-    const fim = hF * 60 + mF;
-
-    if (fim <= inicio) {
-      throw new BadRequestException(
-        'Hora fim deve ser maior que a hora inicio.',
-      );
-    }
-
-    const tempoSlotMinutos = Number(body?.tempoSlotMinutos);
-    if (
-      !Number.isInteger(tempoSlotMinutos) ||
-      tempoSlotMinutos < 5 ||
-      tempoSlotMinutos > 120
-    ) {
-      throw new BadRequestException(
-        'Tempo de corte deve estar entre 5 e 120 minutos.',
-      );
-    }
-
-    const { horaAlmocoInicio, horaAlmocoFim } = this.normalizarAlmoco(
-      body,
-      regexHora,
-      inicio,
-      fim,
-    );
+    const janela = normalizarJanelaHorario(body, {
+      tempoSlotMinutosObrigatorio: true,
+    });
 
     return {
       diasTrabalho: diasNormalizados,
-      horaInicio,
-      horaFim,
-      horaAlmocoInicio,
-      horaAlmocoFim,
-      tempoSlotMinutos,
-    };
-  }
-
-  private normalizarAlmoco(
-    body: AtualizarAgendaInput,
-    regexHora: RegExp,
-    inicioJanela: number,
-    fimJanela: number,
-  ) {
-    const horaAlmocoInicioBruta = (body?.horaAlmocoInicio ?? '').trim();
-    const horaAlmocoFimBruta = (body?.horaAlmocoFim ?? '').trim();
-
-    if (!horaAlmocoInicioBruta && !horaAlmocoFimBruta) {
-      return { horaAlmocoInicio: null, horaAlmocoFim: null };
-    }
-
-    if (!horaAlmocoInicioBruta || !horaAlmocoFimBruta) {
-      throw new BadRequestException(
-        'Informe inicio e fim do horario de almoco, ou deixe ambos em branco.',
-      );
-    }
-
-    if (
-      !regexHora.test(horaAlmocoInicioBruta) ||
-      !regexHora.test(horaAlmocoFimBruta)
-    ) {
-      throw new BadRequestException(
-        'Horario de almoco invalido. Use HH:mm.',
-      );
-    }
-
-    const [hAI, mAI] = horaAlmocoInicioBruta.split(':').map(Number);
-    const [hAF, mAF] = horaAlmocoFimBruta.split(':').map(Number);
-    const inicioAlmoco = hAI * 60 + mAI;
-    const fimAlmoco = hAF * 60 + mAF;
-
-    if (fimAlmoco <= inicioAlmoco) {
-      throw new BadRequestException(
-        'O fim do almoco deve ser maior que o inicio.',
-      );
-    }
-
-    if (inicioAlmoco < inicioJanela || fimAlmoco > fimJanela) {
-      throw new BadRequestException(
-        'O horario de almoco deve estar dentro da janela de atendimento.',
-      );
-    }
-
-    return {
-      horaAlmocoInicio: horaAlmocoInicioBruta,
-      horaAlmocoFim: horaAlmocoFimBruta,
+      ...janela,
     };
   }
 }

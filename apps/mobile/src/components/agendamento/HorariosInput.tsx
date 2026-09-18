@@ -11,14 +11,22 @@ interface HorariosInputProps {
 
 export default function HorariosInput(props: HorariosInputProps) {
     const [horaAtual, setHoraAtual] = useState<string | null>(null)
-    const { horariosOcupados, profissional } = useAgendamento()
+    const { horariosOcupados, horarioDoDia, profissional } = useAgendamento()
+
+    // Enquanto o horario resolvido do dia ainda esta carregando, usa o
+    // horario base como fallback (evita um flash de "sem horarios").
+    const horaInicio = horarioDoDia?.horaInicio ?? profissional?.horaInicio ?? '08:00'
+    const horaFim = horarioDoDia?.horaFim ?? profissional?.horaFim ?? '19:00'
+    const tempoSlotMinutos = horarioDoDia?.tempoSlotMinutos ?? profissional?.tempoSlotMinutos ?? 15
+    const horaAlmocoInicio = horarioDoDia ? horarioDoDia.horaAlmocoInicio : profissional?.horaAlmocoInicio
+    const horaAlmocoFim = horarioDoDia ? horarioDoDia.horaAlmocoFim : profissional?.horaAlmocoFim
 
     const horarios = AgendaUtils.horariosPorIntervalo(
-        profissional?.horaInicio ?? '08:00',
-        profissional?.horaFim ?? '19:00',
-        profissional?.tempoSlotMinutos ?? 15,
-        profissional?.horaAlmocoInicio,
-        profissional?.horaAlmocoFim
+        horaInicio,
+        horaFim,
+        tempoSlotMinutos,
+        horaAlmocoInicio,
+        horaAlmocoFim
     )
     const { manha, tarde, noite } = AgendaUtils.separarPorPeriodo(horarios)
 
@@ -116,6 +124,11 @@ export default function HorariosInput(props: HorariosInputProps) {
 
     return (
         <View style={styles.container}>
+            {horarioDoDia?.fechado ? (
+                <Text style={styles.avisoFechado}>
+                    Este barbeiro não atende no dia selecionado.
+                </Text>
+            ) : null}
             <View>
                 <Text style={styles.horasTexto}>Manhã</Text>
                 <View style={styles.horasConteudo}>{manha.map(renderizarHorario)}</View>
@@ -142,6 +155,11 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         textAlign: 'center',
         fontWeight: 'bold',
+    },
+    avisoFechado: {
+        color: '#fcd34d',
+        fontSize: 13,
+        textAlign: 'center',
     },
     horasConteudo: {
         flexDirection: 'row',

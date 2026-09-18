@@ -4,11 +4,21 @@ import { DataUtils } from '@neto-bastos/core'
 import useUsuario from '../hooks/useUsuario'
 import useAPI from '../hooks/useAPI'
 
+export interface HorarioResolvido {
+    fechado: boolean
+    horaInicio: string
+    horaFim: string
+    horaAlmocoInicio: string | null
+    horaAlmocoFim: string | null
+    tempoSlotMinutos: number
+}
+
 interface ContextoAgendamentoProps {
     profissional: Profissional | null
     servicos: Servico[]
     data: Date
     horariosOcupados: string[]
+    horarioDoDia: HorarioResolvido | null
     duracaoTotal(): string
     precoTotal(): number
     quantidadeDeSlots(): number
@@ -28,6 +38,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
 
     const { usuario } = useUsuario()
     const [horariosOcupados, setHorariosOcupados] = useState<string[]>([])
+    const [horarioDoDia, setHorarioDoDia] = useState<HorarioResolvido | null>(null)
     const { httpGet, httpPost } = useAPI()
 
     function selecionarProfissional(profissional: Profissional) {
@@ -82,6 +93,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
     function limpar() {
         setData(DataUtils.hoje())
         setHorariosOcupados([])
+        setHorarioDoDia(null)
         setProfissional(null)
         setServicos([])
     }
@@ -102,10 +114,27 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
         [httpGet]
     )
 
+    const obterHorarioDoDia = useCallback(
+        async function (data: Date, profissional: Profissional): Promise<HorarioResolvido | null> {
+            try {
+                if (!data || !profissional) return null
+                const dtString = data.toISOString().slice(0, 10)
+                const resolvido = await httpGet(
+                    `profissional/${profissional!.id}/horario-do-dia?data=${dtString}`
+                )
+                return resolvido ?? null
+            } catch (e) {
+                return null
+            }
+        },
+        [httpGet]
+    )
+
     useEffect(() => {
         if (!data || !profissional) return
         obterHorariosOcupados(data, profissional).then(setHorariosOcupados)
-    }, [data, profissional, obterHorariosOcupados])
+        obterHorarioDoDia(data, profissional).then(setHorarioDoDia)
+    }, [data, profissional, obterHorariosOcupados, obterHorarioDoDia])
 
     return (
         <ContextoAgendamento.Provider
@@ -114,6 +143,7 @@ export function ProvedorAgendamento({ children }: { children: React.ReactNode })
                 profissional,
                 servicos,
                 horariosOcupados,
+                horarioDoDia,
                 duracaoTotal,
                 precoTotal,
                 selecionarData,
