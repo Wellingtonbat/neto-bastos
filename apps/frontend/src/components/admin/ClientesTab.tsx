@@ -169,7 +169,7 @@ export default function ClientesTab(props: ClientesTabProps) {
 
         try {
             setSalvandoSerie(true)
-            await httpPost('agendamentos-recorrentes', {
+            const serie = await httpPost('agendamentos-recorrentes', {
                 emailCliente: clienteSelecionado.email,
                 nomeCliente: clienteSelecionado.nome,
                 telefoneCliente: clienteSelecionado.telefone,
@@ -180,7 +180,14 @@ export default function ClientesTab(props: ClientesTabProps) {
             })
             setServicoIdsRecorrente([])
             await carregarSeries()
-            window.alert('Cliente fixo cadastrado com sucesso.')
+            const datasComConflito: string[] = serie?.datasComConflito ?? []
+            if (datasComConflito.length > 0) {
+                window.alert(
+                    `Cliente fixo cadastrado, mas ${datasComConflito.length} data(s) já tinham agendamento e foram puladas: ${datasComConflito.join(', ')}.`
+                )
+            } else {
+                window.alert('Cliente fixo cadastrado com sucesso.')
+            }
         } catch (e: any) {
             reportarErro(e?.message ?? 'Nao foi possivel cadastrar o cliente fixo.')
         } finally {

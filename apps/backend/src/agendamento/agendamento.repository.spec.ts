@@ -21,6 +21,9 @@ describe('AgendamentoRepository', () => {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue(undefined),
       },
+      servico: {
+        findMany: jest.fn().mockResolvedValue([{ qtdeSlots: 1 }]),
+      },
       profissional: {
         findUnique: jest.fn().mockResolvedValue(PROFISSIONAL_BASE),
       },
@@ -41,7 +44,7 @@ describe('AgendamentoRepository', () => {
       emailCliente: 'cliente@teste.com',
       data: new Date(dataISOComHora) as any,
       profissional: { id: 1 } as any,
-      servicos: [{ id: 1 }] as any,
+      servicos: [{ id: 1, qtdeSlots: 1 }] as any,
     };
   }
 
@@ -95,6 +98,87 @@ describe('AgendamentoRepository', () => {
       await expect(
         repositorio.criar(agendamentoPara('2026-09-21T13:00:00Z')),
       ).rejects.toThrow('Profissional nao atende no dia selecionado.');
+    });
+  });
+
+  describe('criar (conflito de horario)', () => {
+    it('rejeita quando ja existe um agendamento nao cancelado no mesmo horario', async () => {
+      const { repositorio, prisma } = criarRepositorio();
+      (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
+        {
+          data: new Date('2026-09-21T13:00:00Z'),
+          servicos: [{ qtdeSlots: 1 }],
+        },
+      ]);
+
+      await expect(
+        repositorio.criar(agendamentoPara('2026-09-21T13:00:00Z')),
+      ).rejects.toThrow(
+        'Este horario acabou de ser reservado por outro cliente. Escolha outro horario.',
+      );
+      expect(prisma.agendamento.create).not.toHaveBeenCalled();
+    });
+
+    it('rejeita quando o novo agendamento (varios slots) sobrepoe o fim de um agendamento existente', async () => {
+      const { repositorio, prisma } = criarRepositorio();
+      // Existente as 10:00, 1 slot de 15min -> ocupa 10:00-10:15.
+      (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
+        {
+          data: new Date('2026-09-21T13:00:00Z'), // 10:00 em Brasilia
+          servicos: [{ qtdeSlots: 1 }],
+        },
+      ]);
+      // A duracao vem do banco (por id), nunca do corpo da requisicao.
+      (prisma.servico.findMany as jest.Mock).mockResolvedValue([
+        { qtdeSlots: 2 },
+      ]);
+
+      const novo = agendamentoPara('2026-09-21T12:45:00Z'); // 09:45 em Brasilia
+      novo.servicos = [{ id: 1, qtdeSlots: 2 }] as any; // ocupa 09:45-10:15
+
+      await expect(repositorio.criar(novo)).rejects.toThrow(
+        'Este horario acabou de ser reservado por outro cliente. Escolha outro horario.',
+      );
+    });
+
+    it('ignora o qtdeSlots vindo do corpo da requisicao e usa o valor real do banco', async () => {
+      const { repositorio, prisma } = criarRepositorio();
+      // Existente as 10:00, 1 slot de 15min -> ocupa 10:00-10:15.
+      (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
+        {
+          data: new Date('2026-09-21T13:00:00Z'),
+          servicos: [{ qtdeSlots: 1 }],
+        },
+      ]);
+      // corpo da requisicao mente e diz qtdeSlots:1 (nao colidiria), mas o
+      // servico de verdade no banco tem qtdeSlots:2 (colide as 09:45-10:15).
+      (prisma.servico.findMany as jest.Mock).mockResolvedValue([
+        { qtdeSlots: 2 },
+      ]);
+
+      const novo = agendamentoPara('2026-09-21T12:45:00Z'); // 09:45 em Brasilia
+      novo.servicos = [{ id: 1, qtdeSlots: 1 }] as any;
+
+      await expect(repositorio.criar(novo)).rejects.toThrow(
+        'Este horario acabou de ser reservado por outro cliente. Escolha outro horario.',
+      );
+    });
+
+    it('aceita quando nao ha sobreposicao com nenhum agendamento existente', async () => {
+      const { repositorio, prisma } = criarRepositorio();
+      (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
+        {
+          data: new Date('2026-09-21T13:00:00Z'), // 10:00 em Brasilia
+          servicos: [{ qtdeSlots: 1 }],
+        },
+      ]);
+
+      const novo = agendamentoPara('2026-09-21T14:00:00Z'); // 11:00 em Brasilia
+      novo.servicos = [{ id: 1, qtdeSlots: 1 }] as any;
+
+      await repositorio.criar(novo);
+
+      expect(prisma.agendamento.create).toHaveBeenCalled();
     });
   });
 
