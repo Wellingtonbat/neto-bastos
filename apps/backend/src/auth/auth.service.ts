@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -316,9 +317,23 @@ export class AuthService {
     };
   }
 
-  async resetarSenha(usuarioId: number) {
+  async resetarSenha(usuarioId: number, solicitante: { role: RoleUsuario }) {
     if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
       throw new BadRequestException('Usuário informado é inválido.');
+    }
+
+    // BARBEIRO/FUNCIONARIO só podem resetar senha de conta de cliente --
+    // resetar senha de outro barbeiro/dono continua exclusivo do DONO.
+    if (solicitante.role !== RoleUsuario.DONO) {
+      const alvo = await this.prisma.usuario.findUnique({
+        where: { id: usuarioId },
+        select: { role: true },
+      });
+      if (!alvo || alvo.role !== RoleUsuario.CLIENTE) {
+        throw new ForbiddenException(
+          'Você só pode resetar a senha de contas de cliente.',
+        );
+      }
     }
 
     // Nao ha recuperacao de senha por e-mail (o app nao envia e-mails).

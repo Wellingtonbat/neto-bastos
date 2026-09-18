@@ -12,7 +12,7 @@ import { Agendamento, Profissional, RoleUsuario, Servico } from '@neto-bastos/co
 import useAPI from '../data/hooks/useAPI'
 import useUsuario from '../data/hooks/useUsuario'
 import { useFocusEffect } from '@react-navigation/native'
-import NovoAgendamentoCliente from '../components/perfil/NovoAgendamentoCliente'
+import ClientesTab from '../components/perfil/ClientesTab'
 
 type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CANCELADO'
 type Acao = 'ATUALIZAR_STATUS' | 'EXCLUIR_AGENDAMENTO' | null
@@ -44,7 +44,7 @@ export default function MinhaAgenda() {
     const podeVerTodosBarbeiros = usuario?.role === 'FUNCIONARIO' || usuario?.role === 'DONO'
     const podeExcluir = usuario?.role === 'DONO' || usuario?.role === 'BARBEIRO'
 
-    const [mostrandoNovoAgendamento, setMostrandoNovoAgendamento] = useState(false)
+    const [mostrandoClientes, setMostrandoClientes] = useState(false)
     const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
     const [profissionais, setProfissionais] = useState<Profissional[]>([])
     const [servicos, setServicos] = useState<Servico[]>([])
@@ -142,22 +142,19 @@ export default function MinhaAgenda() {
                 <Text style={styles.titulo}>Minha Agenda</Text>
 
                 <Pressable
-                    style={[styles.chip, mostrandoNovoAgendamento ? styles.chipAtivo : null, { alignSelf: 'flex-start' }]}
-                    onPress={() => setMostrandoNovoAgendamento((v) => !v)}
+                    style={[styles.chip, mostrandoClientes ? styles.chipAtivo : null, { alignSelf: 'flex-start' }]}
+                    onPress={() => setMostrandoClientes((v) => !v)}
                 >
                     <Text style={styles.chipTexto}>
-                        {mostrandoNovoAgendamento ? '✕ Fechar' : '+ Novo agendamento para cliente'}
+                        {mostrandoClientes ? '✕ Fechar' : '+ Clientes'}
                     </Text>
                 </Pressable>
 
-                {mostrandoNovoAgendamento ? (
-                    <NovoAgendamentoCliente
+                {mostrandoClientes ? (
+                    <ClientesTab
                         profissionais={profissionais}
                         servicos={servicos}
-                        aoAgendarComSucesso={() => {
-                            setMostrandoNovoAgendamento(false)
-                            carregarAgendamentos()
-                        }}
+                        aoAgendarComSucesso={carregarAgendamentos}
                     />
                 ) : null}
 

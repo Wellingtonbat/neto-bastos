@@ -8,11 +8,12 @@ import useAPI from '@/data/hooks/useAPI'
 import useProfissionais from '@/data/hooks/useProfissionais'
 import useUsuario from '@/data/hooks/useUsuario'
 import AgendamentosTab from '@/components/admin/AgendamentosTab'
+import ClientesTab from '@/components/admin/ClientesTab'
 import ServicosTab from '@/components/admin/ServicosTab'
 import BarbeirosTab from '@/components/admin/BarbeirosTab'
 import AgendaTab from '@/components/admin/AgendaTab'
 
-type AbaAdmin = 'AGENDAMENTOS' | 'SERVICOS' | 'BARBEIROS' | 'AGENDA'
+type AbaAdmin = 'AGENDAMENTOS' | 'CLIENTES' | 'SERVICOS' | 'BARBEIROS' | 'AGENDA'
 
 export default function PaginaAdmin() {
     const router = useRouter()
@@ -90,6 +91,7 @@ export default function PaginaAdmin() {
                 <nav className="flex flex-wrap gap-2">
                     {[
                         { id: 'AGENDAMENTOS', label: 'Agendamentos' },
+                        { id: 'CLIENTES', label: 'Clientes' },
                         { id: 'SERVICOS', label: 'Servicos' },
                         ...(ehDono ? [{ id: 'BARBEIROS', label: 'Barbeiros' }] : []),
                         { id: 'AGENDA', label: 'Agenda dos barbeiros' },
@@ -109,6 +111,10 @@ export default function PaginaAdmin() {
 
                 <div className={abaAtiva === 'AGENDAMENTOS' ? '' : 'hidden'}>
                     <AgendamentosTab profissionaisAdmin={profissionaisAdmin} />
+                </div>
+
+                <div className={abaAtiva === 'CLIENTES' ? '' : 'hidden'}>
+                    <ClientesTab profissionaisAdmin={profissionaisAdmin} />
                 </div>
 
                 <div className={abaAtiva === 'SERVICOS' ? '' : 'hidden'}>
