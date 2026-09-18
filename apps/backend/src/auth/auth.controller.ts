@@ -146,8 +146,21 @@ export class AuthController {
 
   @Get('clientes')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO, RoleUsuario.FUNCIONARIO)
   listarClientes() {
     return this.authService.listarClientes();
+  }
+
+  @Patch('clientes/:id/recorrente')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO, RoleUsuario.FUNCIONARIO)
+  definirClienteRecorrente(
+    @Param('id') id: string,
+    @Body('clienteRecorrente') clienteRecorrente: boolean,
+  ) {
+    return this.authService.definirClienteRecorrente(
+      Number(id),
+      clienteRecorrente === true,
+    );
   }
 }

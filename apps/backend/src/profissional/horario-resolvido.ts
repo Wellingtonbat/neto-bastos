@@ -1,4 +1,6 @@
+import { BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/db/prisma.service';
+import { horaParaMinutos } from './horario-validacao';
 
 export interface HorarioResolvido {
   fechado: boolean;
@@ -146,4 +148,50 @@ export async function resolverHorarioDoDia(
     horaAlmocoFim: profissional.horaAlmocoFim,
     tempoSlotMinutos: profissional.tempoSlotMinutos,
   };
+}
+
+// Valida um horario "HH:mm" contra um HorarioResolvido: dia fechado, fora
+// da janela de atendimento, fora do alinhamento de slot, ou dentro do
+// almoco. Usado tanto na criacao de um agendamento avulso quanto na
+// criacao/edicao de uma serie recorrente. Lanca BadRequestException com a
+// mesma mensagem em ambos os casos.
+export function validarHorarioResolvido(
+  horario: HorarioResolvido,
+  horaMinuto: string,
+): void {
+  if (horario.fechado) {
+    throw new BadRequestException(
+      'Profissional nao atende no dia selecionado.',
+    );
+  }
+
+  const minutosSelecionados = horaParaMinutos(horaMinuto);
+  const inicioJanela = horaParaMinutos(horario.horaInicio);
+  const fimJanela = horaParaMinutos(horario.horaFim);
+
+  if (minutosSelecionados < inicioJanela || minutosSelecionados >= fimJanela) {
+    throw new BadRequestException(
+      'Horario fora da janela de atendimento do profissional.',
+    );
+  }
+
+  if ((minutosSelecionados - inicioJanela) % horario.tempoSlotMinutos !== 0) {
+    throw new BadRequestException(
+      'Horario invalido para a agenda do profissional.',
+    );
+  }
+
+  if (horario.horaAlmocoInicio && horario.horaAlmocoFim) {
+    const inicioAlmoco = horaParaMinutos(horario.horaAlmocoInicio);
+    const fimAlmoco = horaParaMinutos(horario.horaAlmocoFim);
+
+    if (
+      minutosSelecionados >= inicioAlmoco &&
+      minutosSelecionados < fimAlmoco
+    ) {
+      throw new BadRequestException(
+        'Profissional esta no horario de almoco neste horario.',
+      );
+    }
+  }
 }

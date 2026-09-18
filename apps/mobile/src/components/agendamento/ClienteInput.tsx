@@ -6,12 +6,14 @@ export interface ClienteAdmin {
     nome: string
     email: string
     telefone?: string | null
+    clienteRecorrente?: boolean
 }
 
 interface ClienteInputProps {
     clientes: ClienteAdmin[]
     cliente: ClienteAdmin | null
     clienteMudou: (cliente: ClienteAdmin) => void
+    aoAlternarRecorrente?: (cliente: ClienteAdmin) => void
 }
 
 export default function ClienteInput(props: ClienteInputProps) {
@@ -44,16 +46,31 @@ export default function ClienteInput(props: ClienteInputProps) {
                 nestedScrollEnabled
                 ListEmptyComponent={<Text style={styles.vazio}>Nenhum cliente encontrado.</Text>}
                 renderItem={({ item }) => (
-                    <Pressable
-                        onPress={() => props.clienteMudou(item)}
+                    <View
                         style={[
                             styles.item,
+                            styles.itemLinha,
                             props.cliente?.id === item.id ? styles.itemSelecionado : null,
                         ]}
                     >
-                        <Text style={styles.itemNome}>{item.nome}</Text>
-                        <Text style={styles.itemEmail}>{item.email}</Text>
-                    </Pressable>
+                        <Pressable style={{ flex: 1 }} onPress={() => props.clienteMudou(item)}>
+                            <Text style={styles.itemNome}>{item.nome}</Text>
+                            <Text style={styles.itemEmail}>{item.email}</Text>
+                        </Pressable>
+                        {props.aoAlternarRecorrente ? (
+                            <Pressable
+                                onPress={() => props.aoAlternarRecorrente!(item)}
+                                style={[
+                                    styles.chipRecorrente,
+                                    item.clienteRecorrente ? styles.chipRecorrenteAtivo : null,
+                                ]}
+                            >
+                                <Text style={styles.chipRecorrenteTexto}>
+                                    {item.clienteRecorrente ? '✓ Fixo' : 'Marcar fixo'}
+                                </Text>
+                            </Pressable>
+                        ) : null}
+                    </View>
                 )}
             />
         </View>
@@ -100,5 +117,26 @@ const styles = StyleSheet.create({
     itemEmail: {
         color: '#a1a1aa',
         fontSize: 12,
+    },
+    itemLinha: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    chipRecorrente: {
+        borderWidth: 1,
+        borderColor: '#3f3f46',
+        borderRadius: 999,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+    },
+    chipRecorrenteAtivo: {
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34,197,94,0.1)',
+    },
+    chipRecorrenteTexto: {
+        color: '#d4d4d8',
+        fontSize: 10,
+        fontWeight: '700',
     },
 })

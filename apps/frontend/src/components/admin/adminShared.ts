@@ -12,6 +12,7 @@ export type ClienteAdmin = {
     nome: string
     email: string
     telefone?: string | null
+    clienteRecorrente?: boolean
 }
 
 export type RolePerfil = 'BARBEIRO' | 'CLIENTE' | 'DONO' | 'FUNCIONARIO'

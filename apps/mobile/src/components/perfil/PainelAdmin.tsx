@@ -13,6 +13,7 @@ import {
 import useAPI from '@/src/data/hooks/useAPI'
 import GerenciarBarbeiros from './GerenciarBarbeiros'
 import NovoAgendamentoCliente from './NovoAgendamentoCliente'
+import ClienteRecorrenteForm from './ClienteRecorrenteForm'
 import useAgendamento from '@/src/data/hooks/useAgendamento'
 import { useFocusEffect } from '@react-navigation/native'
 
@@ -138,6 +139,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const { solicitarAtualizacaoAgendamentos } = useAgendamento()
     const [abaAtiva, setAbaAtiva] = useState<AbaAdmin>('AGENDAMENTOS')
     const [mostrandoNovoAgendamento, setMostrandoNovoAgendamento] = useState(false)
+    const [mostrandoClienteRecorrente, setMostrandoClienteRecorrente] = useState(false)
 
     const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
     const [servicos, setServicos] = useState<Servico[]>([])
@@ -630,6 +632,19 @@ export default function PainelAdmin(props: PainelAdminProps) {
                             carregarAgendamentos()
                         }}
                     />
+                ) : null}
+
+                <Pressable
+                    style={[styles.diaChip, mostrandoClienteRecorrente ? styles.diaChipAtivo : null, { alignSelf: 'flex-start' }]}
+                    onPress={() => setMostrandoClienteRecorrente((v) => !v)}
+                >
+                    <Text style={styles.diaChipTexto}>
+                        {mostrandoClienteRecorrente ? '✕ Fechar' : '+ Cliente fixo'}
+                    </Text>
+                </Pressable>
+
+                {mostrandoClienteRecorrente ? (
+                    <ClienteRecorrenteForm profissionais={profissionais} servicos={servicos} />
                 ) : null}
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtrosRow}>

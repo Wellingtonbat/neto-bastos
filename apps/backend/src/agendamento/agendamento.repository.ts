@@ -6,7 +6,10 @@ import {
 } from '@neto-bastos/core';
 import { PrismaService } from 'src/db/prisma.service';
 import { StatusAgendamento } from '@prisma/client';
-import { resolverHorarioDoDia } from 'src/profissional/horario-resolvido';
+import {
+  resolverHorarioDoDia,
+  validarHorarioResolvido,
+} from 'src/profissional/horario-resolvido';
 
 @Injectable()
 export class AgendamentoRepository implements RepositorioAgendamento {
@@ -153,54 +156,6 @@ export class AgendamentoRepository implements RepositorioAgendamento {
       throw new BadRequestException('Profissional informado nao existe.');
     }
 
-    if (horario.fechado) {
-      throw new BadRequestException(
-        'Profissional nao atende no dia selecionado.',
-      );
-    }
-
-    const { hora, minuto } = DataUtils.horaNoFuso(data);
-    const [horaInicio, minutoInicio] = horario.horaInicio
-      .split(':')
-      .map(Number);
-    const [horaFim, minutoFim] = horario.horaFim.split(':').map(Number);
-    const inicioJanela = horaInicio * 60 + minutoInicio;
-    const fimJanela = horaFim * 60 + minutoFim;
-
-    const minutosSelecionados = hora * 60 + minuto;
-    if (
-      minutosSelecionados < inicioJanela ||
-      minutosSelecionados >= fimJanela
-    ) {
-      throw new BadRequestException(
-        'Horario fora da janela de atendimento do profissional.',
-      );
-    }
-
-    if ((minutosSelecionados - inicioJanela) % horario.tempoSlotMinutos !== 0) {
-      throw new BadRequestException(
-        'Horario invalido para a agenda do profissional.',
-      );
-    }
-
-    if (horario.horaAlmocoInicio && horario.horaAlmocoFim) {
-      const [horaAlmocoInicio, minutoAlmocoInicio] = horario.horaAlmocoInicio
-        .split(':')
-        .map(Number);
-      const [horaAlmocoFim, minutoAlmocoFim] = horario.horaAlmocoFim
-        .split(':')
-        .map(Number);
-      const inicioAlmoco = horaAlmocoInicio * 60 + minutoAlmocoInicio;
-      const fimAlmoco = horaAlmocoFim * 60 + minutoAlmocoFim;
-
-      if (
-        minutosSelecionados >= inicioAlmoco &&
-        minutosSelecionados < fimAlmoco
-      ) {
-        throw new BadRequestException(
-          'Profissional esta no horario de almoco neste horario.',
-        );
-      }
-    }
+    validarHorarioResolvido(horario, DataUtils.horaMinutoNoFuso(data));
   }
 }
