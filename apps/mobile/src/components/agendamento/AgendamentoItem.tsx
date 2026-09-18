@@ -8,9 +8,10 @@ interface AgendamentoItemProps {
 }
 
 export default function AgendamentoItem(props: AgendamentoItemProps) {
-    const cor = new Date(props.agendamento.data).getTime() > Date.now() ? '#007aff' : '#AAAAAA'
+    const aindaNaoPassou = new Date(props.agendamento.data).getTime() > Date.now()
+    const cor = aindaNaoPassou ? '#007aff' : '#AAAAAA'
     const status = props.agendamento.status ?? 'PENDENTE'
-    const podeCancelar = status !== 'CANCELADO' && !!props.onCancelar
+    const podeCancelar = status !== 'CANCELADO' && aindaNaoPassou && !!props.onCancelar
 
     function corStatus(valor: string) {
         if (valor === 'CONFIRMADO') return '#22c55e'

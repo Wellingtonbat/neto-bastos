@@ -97,7 +97,7 @@ export default function PaginaMeusAgendamentos() {
                                         {ag.servicos?.map((s) => s.nome).join(', ')}
                                     </p>
                                 </div>
-                                {permiteCancelar ? (
+                                {permiteCancelar && new Date(ag.data).getTime() > Date.now() ? (
                                     <button
                                         onClick={() => cancelar(ag.id)}
                                         disabled={cancelandoId === ag.id}

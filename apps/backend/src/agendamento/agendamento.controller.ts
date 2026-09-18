@@ -1,6 +1,7 @@
 import { Agendamento, ObterHorariosOcupados } from '@neto-bastos/core';
 import { AgendamentoRepository } from './agendamento.repository';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -221,6 +222,12 @@ export class AgendamentoController {
     if (!agendamento || agendamento.emailCliente !== email) {
       throw new ForbiddenException(
         'Você só pode cancelar seus próprios agendamentos.',
+      );
+    }
+
+    if (new Date(agendamento.data).getTime() < Date.now()) {
+      throw new BadRequestException(
+        'Não é possível cancelar um agendamento que já passou.',
       );
     }
 
