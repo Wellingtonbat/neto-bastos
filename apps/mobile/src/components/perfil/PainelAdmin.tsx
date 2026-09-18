@@ -12,12 +12,11 @@ import {
 } from 'react-native'
 import useAPI from '@/src/data/hooks/useAPI'
 import GerenciarBarbeiros from './GerenciarBarbeiros'
-import NovoAgendamentoCliente from './NovoAgendamentoCliente'
-import ClienteRecorrenteForm from './ClienteRecorrenteForm'
+import ClientesTab from './ClientesTab'
 import useAgendamento from '@/src/data/hooks/useAgendamento'
 import { useFocusEffect } from '@react-navigation/native'
 
-type AbaAdmin = 'AGENDAMENTOS' | 'SERVICOS' | 'BARBEIROS' | 'AGENDA'
+type AbaAdmin = 'AGENDAMENTOS' | 'CLIENTES' | 'SERVICOS' | 'BARBEIROS' | 'AGENDA'
 type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CANCELADO'
 
 function dataYYYYMMDD(data: Date) {
@@ -138,8 +137,6 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const { httpGet, httpPost, httpPatch, httpDelete } = useAPI()
     const { solicitarAtualizacaoAgendamentos } = useAgendamento()
     const [abaAtiva, setAbaAtiva] = useState<AbaAdmin>('AGENDAMENTOS')
-    const [mostrandoNovoAgendamento, setMostrandoNovoAgendamento] = useState(false)
-    const [mostrandoClienteRecorrente, setMostrandoClienteRecorrente] = useState(false)
 
     const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
     const [servicos, setServicos] = useState<Servico[]>([])
@@ -187,7 +184,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const podeExcluir = props.role === 'DONO' || props.role === 'BARBEIRO'
 
     const abasDisponiveis = useMemo(() => {
-        const base: AbaAdmin[] = ['AGENDAMENTOS', 'SERVICOS', 'AGENDA']
+        const base: AbaAdmin[] = ['AGENDAMENTOS', 'CLIENTES', 'SERVICOS', 'AGENDA']
         if (isDono) base.push('BARBEIROS')
         return base
     }, [isDono])
@@ -613,39 +610,6 @@ export default function PainelAdmin(props: PainelAdminProps) {
         return (
             <View style={styles.secao}>
                 <Text style={styles.tituloSecao}>Gerenciar Agendamentos</Text>
-
-                <Pressable
-                    style={[styles.diaChip, mostrandoNovoAgendamento ? styles.diaChipAtivo : null, { alignSelf: 'flex-start' }]}
-                    onPress={() => setMostrandoNovoAgendamento((v) => !v)}
-                >
-                    <Text style={styles.diaChipTexto}>
-                        {mostrandoNovoAgendamento ? '✕ Fechar' : '+ Novo agendamento para cliente'}
-                    </Text>
-                </Pressable>
-
-                {mostrandoNovoAgendamento ? (
-                    <NovoAgendamentoCliente
-                        profissionais={profissionais}
-                        servicos={servicos}
-                        aoAgendarComSucesso={() => {
-                            setMostrandoNovoAgendamento(false)
-                            carregarAgendamentos()
-                        }}
-                    />
-                ) : null}
-
-                <Pressable
-                    style={[styles.diaChip, mostrandoClienteRecorrente ? styles.diaChipAtivo : null, { alignSelf: 'flex-start' }]}
-                    onPress={() => setMostrandoClienteRecorrente((v) => !v)}
-                >
-                    <Text style={styles.diaChipTexto}>
-                        {mostrandoClienteRecorrente ? '✕ Fechar' : '+ Cliente fixo'}
-                    </Text>
-                </Pressable>
-
-                {mostrandoClienteRecorrente ? (
-                    <ClienteRecorrenteForm profissionais={profissionais} servicos={servicos} />
-                ) : null}
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtrosRow}>
                     {[
@@ -1091,8 +1055,21 @@ export default function PainelAdmin(props: PainelAdminProps) {
         )
     }
 
+    function renderizarClientes() {
+        return (
+            <View style={styles.secao}>
+                <ClientesTab
+                    profissionais={profissionais}
+                    servicos={servicos}
+                    aoAgendarComSucesso={carregarAgendamentos}
+                />
+            </View>
+        )
+    }
+
     function renderizarConteudo() {
         if (abaAtiva === 'AGENDAMENTOS') return renderizarAgendamentos()
+        if (abaAtiva === 'CLIENTES') return renderizarClientes()
         if (abaAtiva === 'SERVICOS') return renderizarServicos()
         if (abaAtiva === 'AGENDA') return renderizarAgenda()
         return <GerenciarBarbeiros key={props.refreshToken ?? 0} />

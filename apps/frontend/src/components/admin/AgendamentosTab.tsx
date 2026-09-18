@@ -4,20 +4,7 @@ import { useEffect, useState } from 'react'
 import { Profissional } from '@neto-bastos/core'
 import useAPI from '@/data/hooks/useAPI'
 import useUsuario from '@/data/hooks/useUsuario'
-import useAgendamento from '@/data/hooks/useAgendamento'
-import Passos from '@/components/shared/Passos'
-import Sumario from '@/components/agendamento/Sumario'
-import ClienteInput from '@/components/agendamento/ClienteInput'
-import ProfissionalInput from '@/components/agendamento/ProfissionalInput'
-import ServicosInput from '@/components/agendamento/ServicosInput'
-import DataInput from '@/components/agendamento/DataInput'
-import ClienteRecorrenteForm from './ClienteRecorrenteForm'
-import {
-    AgendamentoComStatus,
-    ClienteAdmin,
-    STATUS_LABEL,
-    StatusAgendamento,
-} from './adminShared'
+import { AgendamentoComStatus, STATUS_LABEL, StatusAgendamento } from './adminShared'
 
 export interface AgendamentosTabProps {
     profissionaisAdmin: Profissional[]
@@ -38,18 +25,8 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
     const { usuario } = useUsuario()
     const podeExcluir = usuario?.role === 'DONO' || usuario?.role === 'BARBEIRO'
     const { httpGet, httpPatch, httpDelete } = useAPI()
-    const {
-        profissional,
-        servicos,
-        data,
-        selecionarProfissional,
-        selecionarServicos,
-        selecionarData,
-        quantidadeDeSlots,
-    } = useAgendamento()
 
     const [agendamentos, setAgendamentos] = useState<AgendamentoComStatus[]>([])
-    const [clientes, setClientes] = useState<ClienteAdmin[]>([])
     const [carregando, setCarregando] = useState(true)
     const [acaoCarregando, setAcaoCarregando] = useState<AcaoCarregando>(null)
     const [erro, setErro] = useState('')
@@ -58,37 +35,23 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
     const [filtroProfissional, setFiltroProfissional] = useState<string>('todos')
     const [filtroData, setFiltroData] = useState<string>(hojeYYYYMMDD())
 
-    const [clienteSelecionado, setClienteSelecionado] = useState<ClienteAdmin | null>(null)
-    const [permiteProximoPasso, setPermiteProximoPasso] = useState(false)
-    const [avancarAutomaticamente, setAvancarAutomaticamente] = useState(0)
-    const [reiniciarPassos, setReiniciarPassos] = useState(0)
-
     function reportarErro(mensagem: string) {
         setErro(mensagem)
         window.alert(mensagem)
     }
 
-    async function carregarClientes() {
-        const data = await httpGet('auth/clientes')
-        setClientes(data ?? [])
-    }
-
     async function carregarAgendamentos() {
-        const params = new URLSearchParams()
-        if (filtroStatus !== 'TODOS') params.set('status', filtroStatus)
-        if (filtroProfissional !== 'todos') params.set('profissionalId', filtroProfissional)
-        if (filtroData) params.set('data', filtroData)
-
-        const query = params.toString()
-        const data = await httpGet(`agendamentos${query ? `?${query}` : ''}`)
-        setAgendamentos(data ?? [])
-    }
-
-    async function carregarTudo() {
         try {
             setCarregando(true)
             setErro('')
-            await Promise.all([carregarAgendamentos(), carregarClientes()])
+            const params = new URLSearchParams()
+            if (filtroStatus !== 'TODOS') params.set('status', filtroStatus)
+            if (filtroProfissional !== 'todos') params.set('profissionalId', filtroProfissional)
+            if (filtroData) params.set('data', filtroData)
+
+            const query = params.toString()
+            const data = await httpGet(`agendamentos${query ? `?${query}` : ''}`)
+            setAgendamentos(data ?? [])
         } catch (e: any) {
             setErro(e?.message ?? 'Nao foi possivel carregar os dados.')
         } finally {
@@ -97,50 +60,9 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
     }
 
     useEffect(() => {
-        carregarTudo()
+        carregarAgendamentos()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filtroStatus, filtroProfissional, filtroData])
-
-    function clienteMudou(cliente: ClienteAdmin) {
-        setClienteSelecionado(cliente)
-        setAvancarAutomaticamente((valor) => valor + 1)
-    }
-
-    async function alternarClienteRecorrente(cliente: ClienteAdmin) {
-        try {
-            const atualizado = await httpPatch(`auth/clientes/${cliente.id}/recorrente`, {
-                clienteRecorrente: !cliente.clienteRecorrente,
-            })
-            setClientes((atual) => atual.map((c) => (c.id === cliente.id ? atualizado : c)))
-        } catch (e: any) {
-            reportarErro(e?.message ?? 'Nao foi possivel atualizar o cliente.')
-        }
-    }
-
-    function profissionalMudou(profissional: Profissional) {
-        selecionarProfissional(profissional)
-        setPermiteProximoPasso(!!profissional)
-        setAvancarAutomaticamente((valor) => valor + 1)
-    }
-
-    function servicosMudou(servicos: any[]) {
-        selecionarServicos(servicos)
-        setPermiteProximoPasso(servicos.length > 0)
-        setAvancarAutomaticamente((valor) => valor + 1)
-    }
-
-    function dataMudou(data: Date) {
-        selecionarData(data)
-        const horaValida = data.getHours() >= 8 && data.getHours() <= 21
-        setPermiteProximoPasso(horaValida)
-    }
-
-    function agendamentoCriadoComSucesso() {
-        setClienteSelecionado(null)
-        setPermiteProximoPasso(false)
-        setReiniciarPassos((valor) => valor + 1)
-        carregarAgendamentos()
-    }
 
     async function atualizarStatus(id: number, status: StatusAgendamento) {
         try {
@@ -181,45 +103,6 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
                     {erro}
                 </div>
             ) : null}
-
-            <section className="bg-zinc-800 border border-zinc-700 rounded-lg p-5 space-y-4 mb-6">
-                <h2 className="text-xl font-bold text-zinc-100">Novo agendamento para cliente</h2>
-                <div className="flex flex-col lg:flex-row items-stretch lg:items-start gap-8">
-                    <Passos
-                        permiteProximoPasso={permiteProximoPasso}
-                        permiteProximoPassoMudou={setPermiteProximoPasso}
-                        avancarAutomaticamente={avancarAutomaticamente}
-                        reiniciar={reiniciarPassos}
-                        labels={['Cliente', 'Profissional', 'Serviço', 'Horário']}
-                    >
-                        <ClienteInput
-                            clientes={clientes}
-                            cliente={clienteSelecionado}
-                            clienteMudou={clienteMudou}
-                            aoAlternarRecorrente={alternarClienteRecorrente}
-                        />
-                        <ProfissionalInput
-                            profissional={profissional}
-                            profissionalMudou={profissionalMudou}
-                        />
-                        <ServicosInput servicos={servicos} servicosMudou={servicosMudou} />
-                        <DataInput
-                            data={data}
-                            dataMudou={dataMudou}
-                            quantidadeDeSlots={quantidadeDeSlots()}
-                        />
-                    </Passos>
-                    <Sumario
-                        emailCliente={clienteSelecionado?.email}
-                        nomeCliente={clienteSelecionado?.nome ?? ''}
-                        aoAgendarComSucesso={agendamentoCriadoComSucesso}
-                    />
-                </div>
-            </section>
-
-            <div className="mb-6">
-                <ClienteRecorrenteForm clientes={clientes} profissionaisAdmin={profissionaisAdmin} />
-            </div>
 
             <section className="bg-zinc-800 border border-zinc-700 rounded-lg p-5 space-y-4">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">

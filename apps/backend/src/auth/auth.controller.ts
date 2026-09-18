@@ -75,9 +75,9 @@ export class AuthController {
 
   @Patch('usuarios/:id/resetar-senha')
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles(RoleUsuario.DONO)
-  resetarSenha(@Param('id') id: string) {
-    return this.authService.resetarSenha(+id);
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO, RoleUsuario.FUNCIONARIO)
+  resetarSenha(@Req() req: any, @Param('id') id: string) {
+    return this.authService.resetarSenha(+id, req.user);
   }
 
   @Post('barbeiros')
