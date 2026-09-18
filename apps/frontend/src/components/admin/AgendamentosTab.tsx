@@ -11,6 +11,7 @@ import ClienteInput from '@/components/agendamento/ClienteInput'
 import ProfissionalInput from '@/components/agendamento/ProfissionalInput'
 import ServicosInput from '@/components/agendamento/ServicosInput'
 import DataInput from '@/components/agendamento/DataInput'
+import ClienteRecorrenteForm from './ClienteRecorrenteForm'
 import {
     AgendamentoComStatus,
     ClienteAdmin,
@@ -105,6 +106,17 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
         setAvancarAutomaticamente((valor) => valor + 1)
     }
 
+    async function alternarClienteRecorrente(cliente: ClienteAdmin) {
+        try {
+            const atualizado = await httpPatch(`auth/clientes/${cliente.id}/recorrente`, {
+                clienteRecorrente: !cliente.clienteRecorrente,
+            })
+            setClientes((atual) => atual.map((c) => (c.id === cliente.id ? atualizado : c)))
+        } catch (e: any) {
+            reportarErro(e?.message ?? 'Nao foi possivel atualizar o cliente.')
+        }
+    }
+
     function profissionalMudou(profissional: Profissional) {
         selecionarProfissional(profissional)
         setPermiteProximoPasso(!!profissional)
@@ -184,6 +196,7 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
                             clientes={clientes}
                             cliente={clienteSelecionado}
                             clienteMudou={clienteMudou}
+                            aoAlternarRecorrente={alternarClienteRecorrente}
                         />
                         <ProfissionalInput
                             profissional={profissional}
@@ -203,6 +216,10 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
                     />
                 </div>
             </section>
+
+            <div className="mb-6">
+                <ClienteRecorrenteForm clientes={clientes} profissionaisAdmin={profissionaisAdmin} />
+            </div>
 
             <section className="bg-zinc-800 border border-zinc-700 rounded-lg p-5 space-y-4">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">

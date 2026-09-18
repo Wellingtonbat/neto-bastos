@@ -27,22 +27,23 @@ enum RoleUsuario {
 }
 
 model Profissional {
-  id                   Int              @id @default(autoincrement())
-  nome                 String
-  descricao            String
-  imagemUrl            String
-  avaliacao            Float
-  quantidadeAvaliacoes Int
-  diasTrabalho         Int[]            @default([1, 2, 3, 4, 5, 6])
-  horaInicio           String           @default("08:00")
-  horaFim              String           @default("19:00")
-  horaAlmocoInicio     String?
-  horaAlmocoFim        String?
-  tempoSlotMinutos     Int              @default(15)
-  agendamentos         Agendamento[]
-  usuario              Usuario?
-  horariosSemanais     HorarioSemanal[]
-  excecoesAgenda       ExcecaoAgenda[]
+  id                      Int                     @id @default(autoincrement())
+  nome                    String
+  descricao               String
+  imagemUrl               String
+  avaliacao               Float
+  quantidadeAvaliacoes    Int
+  diasTrabalho            Int[]                   @default([1, 2, 3, 4, 5, 6])
+  horaInicio              String                  @default("08:00")
+  horaFim                 String                  @default("19:00")
+  horaAlmocoInicio        String?
+  horaAlmocoFim           String?
+  tempoSlotMinutos        Int                     @default(15)
+  agendamentos            Agendamento[]
+  usuario                 Usuario?
+  horariosSemanais        HorarioSemanal[]
+  excecoesAgenda          ExcecaoAgenda[]
+  agendamentosRecorrentes AgendamentoRecorrente[]
 
   @@map("profissional")
 }
@@ -84,27 +85,55 @@ model ExcecaoAgenda {
 }
 
 model Servico {
-  id           Int           @id @default(autoincrement())
-  nome         String        @unique
-  descricao    String
-  preco        Float
-  qtdeSlots    Int
-  imagemURL    String
-  agendamentos Agendamento[]
+  id                      Int                     @id @default(autoincrement())
+  nome                    String                  @unique
+  descricao               String
+  preco                   Float
+  qtdeSlots               Int
+  imagemURL               String
+  agendamentos            Agendamento[]
+  agendamentosRecorrentes AgendamentoRecorrente[]
 
   @@map("servico")
 }
 
 model Agendamento {
-  id             Int               @id @default(autoincrement())
-  emailCliente   String
-  status         StatusAgendamento @default(PENDENTE)
-  data           DateTime          @db.Timestamptz(3)
-  profissional   Profissional      @relation(fields: [profissionalId], references: [id])
-  profissionalId Int
-  servicos       Servico[]
+  id                      Int                    @id @default(autoincrement())
+  emailCliente            String
+  status                  StatusAgendamento      @default(PENDENTE)
+  data                    DateTime               @db.Timestamptz(3)
+  profissional            Profissional           @relation(fields: [profissionalId], references: [id])
+  profissionalId          Int
+  servicos                Servico[]
+  agendamentoRecorrente   AgendamentoRecorrente? @relation(fields: [agendamentoRecorrenteId], references: [id])
+  agendamentoRecorrenteId Int?
+  // true = esta ocorrencia foi editada isoladamente (escopo "esta"); a
+  // edicao/renovacao da serie (escopo "proximas") preserva ocorrencias
+  // marcadas assim em vez de regenera-las.
+  personalizado           Boolean                @default(false)
 
   @@map("agendamento")
+}
+
+// Padrao de um cliente com horario fixo (ex: "sabados as 8h"). Cada
+// ocorrencia gerada vira uma linha normal de Agendamento, ligada de volta
+// aqui via agendamentoRecorrenteId. So pode ser criado para um Usuario com
+// clienteRecorrente=true (ver Usuario abaixo).
+model AgendamentoRecorrente {
+  id              Int           @id @default(autoincrement())
+  emailCliente    String
+  nomeCliente     String
+  telefoneCliente String?
+  profissional    Profissional  @relation(fields: [profissionalId], references: [id])
+  profissionalId  Int
+  diaSemana       Int
+  horario         String
+  servicos        Servico[]
+  ativo           Boolean       @default(true)
+  criadoEm        DateTime      @default(now())
+  ocorrencias     Agendamento[]
+
+  @@map("agendamento_recorrente")
 }
 
 model Imagem {
@@ -117,17 +146,21 @@ model Imagem {
 }
 
 model Usuario {
-  id             Int           @id @default(autoincrement())
-  email          String        @unique
-  nome           String
-  telefone       String?
-  senha          String?
-  pushToken      String?
-  role           RoleUsuario   @default(CLIENTE)
-  profissionalId Int?          @unique
-  profissional   Profissional? @relation(fields: [profissionalId], references: [id])
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                Int           @id @default(autoincrement())
+  email             String        @unique
+  nome              String
+  telefone          String?
+  senha             String?
+  pushToken         String?
+  role              RoleUsuario   @default(CLIENTE)
+  profissionalId    Int?          @unique
+  profissional      Profissional? @relation(fields: [profissionalId], references: [id])
+  // Marca um cliente (role CLIENTE) como tendo horario fixo/recorrente.
+  // Editavel pelo barbeiro/dono/funcionario -- pre-condicao pra criar um
+  // AgendamentoRecorrente pra esse cliente.
+  clienteRecorrente Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   @@map("usuario")
 }

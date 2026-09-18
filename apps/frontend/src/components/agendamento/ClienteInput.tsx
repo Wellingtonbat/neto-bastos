@@ -5,6 +5,7 @@ export interface ClienteInputProps {
     clientes: ClienteAdmin[]
     cliente: ClienteAdmin | null
     clienteMudou: (cliente: ClienteAdmin) => void
+    aoAlternarRecorrente?: (cliente: ClienteAdmin) => void
 }
 
 export default function ClienteInput(props: ClienteInputProps) {
@@ -37,14 +38,31 @@ export default function ClienteInput(props: ClienteInputProps) {
                     clientesFiltrados.map((cliente) => (
                         <div
                             key={cliente.id}
-                            onClick={() => props.clienteMudou(cliente)}
                             className={`
-                                cursor-pointer select-none border rounded-lg px-4 py-3
+                                flex items-center justify-between gap-3 select-none border rounded-lg px-4 py-3
                                 ${props.cliente?.id === cliente.id ? 'border-green-400 bg-green-400/10' : 'border-zinc-700 bg-zinc-900'}
                             `}
                         >
-                            <p className="text-sm text-white">{cliente.nome}</p>
-                            <p className="text-xs text-zinc-400">{cliente.email}</p>
+                            <div className="cursor-pointer flex-1" onClick={() => props.clienteMudou(cliente)}>
+                                <p className="text-sm text-white">{cliente.nome}</p>
+                                <p className="text-xs text-zinc-400">{cliente.email}</p>
+                            </div>
+                            {props.aoAlternarRecorrente ? (
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        props.aoAlternarRecorrente!(cliente)
+                                    }}
+                                    className={`text-xs px-2 py-1 rounded border whitespace-nowrap ${
+                                        cliente.clienteRecorrente
+                                            ? 'border-green-500 text-green-400 bg-green-500/10'
+                                            : 'border-zinc-600 text-zinc-400'
+                                    }`}
+                                >
+                                    {cliente.clienteRecorrente ? '✓ Cliente fixo' : 'Marcar fixo'}
+                                </button>
+                            ) : null}
                         </div>
                     ))
                 )}

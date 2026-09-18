@@ -456,9 +456,29 @@ export class AuthService {
         nome: true,
         email: true,
         telefone: true,
+        clienteRecorrente: true,
       },
       orderBy: {
         nome: 'asc',
+      },
+    });
+  }
+
+  async definirClienteRecorrente(id: number, clienteRecorrente: boolean) {
+    const usuario = await this.prisma.usuario.findUnique({ where: { id } });
+    if (!usuario || usuario.role !== RoleUsuario.CLIENTE) {
+      throw new BadRequestException('Cliente informado nao existe.');
+    }
+
+    return this.prisma.usuario.update({
+      where: { id },
+      data: { clienteRecorrente },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        telefone: true,
+        clienteRecorrente: true,
       },
     });
   }
@@ -467,11 +487,7 @@ export class AuthService {
     return this.prisma.usuario.findMany({
       where: {
         role: {
-          in: [
-            RoleUsuario.BARBEIRO,
-            RoleUsuario.DONO,
-            RoleUsuario.FUNCIONARIO,
-          ],
+          in: [RoleUsuario.BARBEIRO, RoleUsuario.DONO, RoleUsuario.FUNCIONARIO],
         },
       },
       select: {
