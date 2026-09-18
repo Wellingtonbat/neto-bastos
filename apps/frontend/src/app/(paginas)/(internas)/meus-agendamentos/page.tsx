@@ -7,7 +7,7 @@ import Cabecalho from '@/components/shared/Cabecalho'
 import useUsuario from '@/data/hooks/useUsuario'
 import useAPI from '@/data/hooks/useAPI'
 
-type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CANCELADO'
+type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CONCLUIDO' | 'CANCELADO'
 
 type AgendamentoComStatus = Agendamento & {
     id: number
@@ -63,6 +63,11 @@ export default function PaginaMeusAgendamentos() {
 
     const confirmados = useMemo(
         () => agendamentos.filter((a) => (a.status ?? 'PENDENTE') === 'CONFIRMADO'),
+        [agendamentos]
+    )
+
+    const concluidos = useMemo(
+        () => agendamentos.filter((a) => a.status === 'CONCLUIDO'),
         [agendamentos]
     )
 
@@ -134,6 +139,7 @@ export default function PaginaMeusAgendamentos() {
 
                 {renderizarLista('Pendentes', pendentes, true)}
                 {renderizarLista('Confirmados', confirmados, true)}
+                {renderizarLista('Concluídos', concluidos, false)}
                 {renderizarLista('Cancelados', cancelados, false)}
             </div>
         </div>

@@ -1,4 +1,4 @@
-import { Agendamento, ObterHorariosOcupados } from '@neto-bastos/core';
+import { Agendamento, ObterHorariosOcupados, PixUtils } from '@neto-bastos/core';
 import { AgendamentoRepository } from './agendamento.repository';
 import {
   BadRequestException,
@@ -28,6 +28,11 @@ import { PushNotificationService } from 'src/notificacao/push-notification.servi
 function parseDataBrasilia(data: string): Date {
   return new Date(`${data}T00:00:00-03:00`);
 }
+
+// Cidade do recebedor no codigo Pix (campo obrigatorio do Banco Central).
+// A barbearia tem um unico endereco fisico, entao e uma constante fixa em
+// vez de um cadastro -- nao ha endereco/filiais no sistema hoje.
+const CIDADE_PIX = 'Feira de Santana';
 
 @Controller('agendamentos')
 export class AgendamentoController {
@@ -185,6 +190,61 @@ export class AgendamentoController {
     return atualizado;
   }
 
+  @Get(':id/pix')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO, RoleUsuario.FUNCIONARIO)
+  async obterDadosPix(@Req() req: any, @Param('id') id: string) {
+    const user = req.user as {
+      role: RoleUsuario;
+      profissionalId: number | null;
+    };
+
+    const agendamento = await this.repo.buscarPorId(+id);
+    if (!agendamento) {
+      throw new BadRequestException('Agendamento não encontrado.');
+    }
+
+    if (
+      user.role === RoleUsuario.BARBEIRO &&
+      agendamento.profissionalId !== user.profissionalId
+    ) {
+      throw new ForbiddenException(
+        'Você só pode gerar o Pix de agendamentos do seu próprio calendário.',
+      );
+    }
+
+    const profissionalComUsuario = await this.prisma.profissional.findUnique({
+      where: { id: agendamento.profissionalId },
+      include: { usuario: { select: { telefone: true } } },
+    });
+
+    const telefone = profissionalComUsuario?.usuario?.telefone;
+    if (!telefone) {
+      throw new BadRequestException(
+        'Este profissional não tem telefone cadastrado na conta -- não é possível gerar o Pix. Use a opção "Dinheiro" ou cadastre um telefone para ele.',
+      );
+    }
+
+    const valor = agendamento.servicos.reduce(
+      (total, servico) => total + servico.preco,
+      0,
+    );
+
+    const payload = PixUtils.montarPayload({
+      telefone,
+      nomeRecebedor: agendamento.profissional.nome,
+      cidade: CIDADE_PIX,
+      valor,
+      identificador: `ATD${agendamento.id}`,
+    });
+
+    return {
+      payload,
+      valor,
+      nomeProfissional: agendamento.profissional.nome,
+    };
+  }
+
   @Delete(':id')
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO)
@@ -222,6 +282,12 @@ export class AgendamentoController {
     if (!agendamento || agendamento.emailCliente !== email) {
       throw new ForbiddenException(
         'Você só pode cancelar seus próprios agendamentos.',
+      );
+    }
+
+    if (agendamento.status === StatusAgendamento.CONCLUIDO) {
+      throw new BadRequestException(
+        'Não é possível cancelar um agendamento que já foi concluído.',
       );
     }
 
@@ -326,6 +392,7 @@ export class AgendamentoController {
     const statusLabel: Record<StatusAgendamento, string> = {
       PENDENTE: 'Pendente',
       CONFIRMADO: 'Confirmado',
+      CONCLUIDO: 'Concluído',
       CANCELADO: 'Cancelado',
     };
 

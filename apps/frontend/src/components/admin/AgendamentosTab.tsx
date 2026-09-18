@@ -5,6 +5,7 @@ import { Profissional } from '@neto-bastos/core'
 import useAPI from '@/data/hooks/useAPI'
 import useUsuario from '@/data/hooks/useUsuario'
 import { AgendamentoComStatus, STATUS_LABEL, StatusAgendamento } from './adminShared'
+import FinalizarAtendimentoModal from './FinalizarAtendimentoModal'
 
 export interface AgendamentosTabProps {
     profissionaisAdmin: Profissional[]
@@ -34,6 +35,8 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
     const [filtroStatus, setFiltroStatus] = useState<'TODOS' | StatusAgendamento>('TODOS')
     const [filtroProfissional, setFiltroProfissional] = useState<string>('todos')
     const [filtroData, setFiltroData] = useState<string>(hojeYYYYMMDD())
+
+    const [agendamentoFinalizando, setAgendamentoFinalizando] = useState<AgendamentoComStatus | null>(null)
 
     function reportarErro(mensagem: string) {
         setErro(mensagem)
@@ -131,6 +134,7 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
                             <option value="TODOS">Todos os status</option>
                             <option value="PENDENTE">Pendentes</option>
                             <option value="CONFIRMADO">Confirmados</option>
+                            <option value="CONCLUIDO">Concluídos</option>
                             <option value="CANCELADO">Cancelados</option>
                         </select>
                         <select
@@ -191,6 +195,15 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
                                             </button>
                                         </>
                                     ) : null}
+                                    {ag.status === 'CONFIRMADO' ? (
+                                        <button
+                                            onClick={() => setAgendamentoFinalizando(ag)}
+                                            disabled={!!acaoCarregando}
+                                            className="button bg-blue-700"
+                                        >
+                                            Finalizar atendimento
+                                        </button>
+                                    ) : null}
                                     {podeExcluir ? (
                                         <button
                                             onClick={() => excluirAgendamento(ag.id)}
@@ -206,6 +219,17 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
                     </div>
                 )}
             </section>
+
+            {agendamentoFinalizando ? (
+                <FinalizarAtendimentoModal
+                    agendamento={agendamentoFinalizando}
+                    aoFechar={() => setAgendamentoFinalizando(null)}
+                    aoConcluir={() => {
+                        setAgendamentoFinalizando(null)
+                        carregarAgendamentos()
+                    }}
+                />
+            ) : null}
         </>
     )
 }

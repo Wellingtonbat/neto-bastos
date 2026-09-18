@@ -12,12 +12,13 @@ import {
 } from 'react-native'
 import useAPI from '@/src/data/hooks/useAPI'
 import GerenciarBarbeiros from './GerenciarBarbeiros'
+import FinalizarAtendimentoModal from './FinalizarAtendimentoModal'
 import ClientesTab from './ClientesTab'
 import useAgendamento from '@/src/data/hooks/useAgendamento'
 import { useFocusEffect } from '@react-navigation/native'
 
 type AbaAdmin = 'AGENDAMENTOS' | 'CLIENTES' | 'SERVICOS' | 'BARBEIROS' | 'AGENDA'
-type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CANCELADO'
+type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CONCLUIDO' | 'CANCELADO'
 
 function dataYYYYMMDD(data: Date) {
     const ano = data.getFullYear()
@@ -39,6 +40,7 @@ const STATUS_OPCOES: Array<'TODOS' | StatusAgendamento> = [
     'TODOS',
     'PENDENTE',
     'CONFIRMADO',
+    'CONCLUIDO',
     'CANCELADO',
 ]
 
@@ -139,6 +141,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const [abaAtiva, setAbaAtiva] = useState<AbaAdmin>('AGENDAMENTOS')
 
     const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
+    const [agendamentoFinalizando, setAgendamentoFinalizando] = useState<Agendamento | null>(null)
     const [servicos, setServicos] = useState<Servico[]>([])
     const [profissionais, setProfissionais] = useState<Profissional[]>([])
 
@@ -696,6 +699,15 @@ export default function PainelAdmin(props: PainelAdminProps) {
                                 </>
                             ) : null}
 
+                            {agendamento.status === 'CONFIRMADO' ? (
+                                <Pressable
+                                    style={styles.botaoAcao}
+                                    onPress={() => setAgendamentoFinalizando(agendamento)}
+                                >
+                                    <Text style={styles.botaoAcaoTexto}>Finalizar atendimento</Text>
+                                </Pressable>
+                            ) : null}
+
                             {podeExcluir ? (
                                 <Pressable style={styles.botaoAcaoDanger} onPress={() => excluirAgendamento(agendamento.id)}>
                                     <Text style={styles.botaoAcaoTexto}>Excluir</Text>
@@ -706,6 +718,17 @@ export default function PainelAdmin(props: PainelAdminProps) {
                 ))}
 
                 {agendamentos.length === 0 ? <Text style={styles.info}>Nenhum agendamento encontrado.</Text> : null}
+
+                {agendamentoFinalizando ? (
+                    <FinalizarAtendimentoModal
+                        agendamento={agendamentoFinalizando}
+                        aoFechar={() => setAgendamentoFinalizando(null)}
+                        aoConcluir={() => {
+                            setAgendamentoFinalizando(null)
+                            carregarAgendamentos()
+                        }}
+                    />
+                ) : null}
             </View>
         )
     }

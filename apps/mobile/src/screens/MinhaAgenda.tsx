@@ -13,14 +13,16 @@ import useAPI from '../data/hooks/useAPI'
 import useUsuario from '../data/hooks/useUsuario'
 import { useFocusEffect } from '@react-navigation/native'
 import ClientesTab from '../components/perfil/ClientesTab'
+import FinalizarAtendimentoModal from '../components/perfil/FinalizarAtendimentoModal'
 
-type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CANCELADO'
+type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CONCLUIDO' | 'CANCELADO'
 type Acao = 'ATUALIZAR_STATUS' | 'EXCLUIR_AGENDAMENTO' | null
 
 const STATUS_OPCOES: Array<'TODOS' | StatusAgendamento> = [
     'TODOS',
     'PENDENTE',
     'CONFIRMADO',
+    'CONCLUIDO',
     'CANCELADO',
 ]
 
@@ -46,6 +48,7 @@ export default function MinhaAgenda() {
 
     const [mostrandoClientes, setMostrandoClientes] = useState(false)
     const [agendamentos, setAgendamentos] = useState<Agendamento[]>([])
+    const [agendamentoFinalizando, setAgendamentoFinalizando] = useState<Agendamento | null>(null)
     const [profissionais, setProfissionais] = useState<Profissional[]>([])
     const [servicos, setServicos] = useState<Servico[]>([])
 
@@ -250,6 +253,15 @@ export default function MinhaAgenda() {
                                         </Pressable>
                                     </>
                                 ) : null}
+                                {agendamento.status === 'CONFIRMADO' ? (
+                                    <Pressable
+                                        style={styles.botaoAcao}
+                                        onPress={() => setAgendamentoFinalizando(agendamento)}
+                                        disabled={!!acao}
+                                    >
+                                        <Text style={styles.botaoAcaoTexto}>Finalizar atendimento</Text>
+                                    </Pressable>
+                                ) : null}
                                 {podeExcluir ? (
                                     <Pressable
                                         style={styles.botaoAcaoDanger}
@@ -264,6 +276,17 @@ export default function MinhaAgenda() {
                     ))
                 )}
             </ScrollView>
+
+            {agendamentoFinalizando ? (
+                <FinalizarAtendimentoModal
+                    agendamento={agendamentoFinalizando}
+                    aoFechar={() => setAgendamentoFinalizando(null)}
+                    aoConcluir={() => {
+                        setAgendamentoFinalizando(null)
+                        carregarAgendamentos()
+                    }}
+                />
+            ) : null}
         </SafeAreaView>
     )
 }
