@@ -37,6 +37,7 @@ describe('AgendamentoController', () => {
         id: 42,
         emailCliente: 'cliente@teste.com',
         profissionalId: 7,
+        data: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
       (repo.atualizarStatus as jest.Mock).mockResolvedValue({
         id: 42,
@@ -106,6 +107,31 @@ describe('AgendamentoController', () => {
       await expect(
         controller.atualizarStatus(req, '42', StatusAgendamento.CANCELADO),
       ).rejects.toThrow();
+    });
+
+    it('rejeita cancelamento de agendamento que ja passou', async () => {
+      const { controller, repo } = criarController();
+      (repo.buscarPorId as jest.Mock).mockResolvedValue({
+        id: 42,
+        emailCliente: 'cliente@teste.com',
+        profissionalId: 7,
+        data: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      });
+
+      const req = {
+        user: {
+          email: 'cliente@teste.com',
+          role: RoleUsuario.CLIENTE,
+          profissionalId: null,
+        },
+      };
+
+      await expect(
+        controller.atualizarStatus(req, '42', StatusAgendamento.CANCELADO),
+      ).rejects.toThrow(
+        'Não é possível cancelar um agendamento que já passou.',
+      );
+      expect(repo.atualizarStatus).not.toHaveBeenCalled();
     });
 
     it('rejeita cliente tentando mudar status para algo diferente de CANCELADO', async () => {
