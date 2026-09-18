@@ -1,6 +1,6 @@
 import { Agendamento } from '@neto-bastos/core'
 
-export type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CANCELADO'
+export type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CONCLUIDO' | 'CANCELADO'
 
 export type AgendamentoComStatus = Agendamento & {
     id: number
@@ -35,6 +35,7 @@ export type BarbeiroAdmin = {
 export const STATUS_LABEL: Record<StatusAgendamento, string> = {
     PENDENTE: 'Pendente',
     CONFIRMADO: 'Confirmado',
+    CONCLUIDO: 'Concluído',
     CANCELADO: 'Cancelado',
 }
 

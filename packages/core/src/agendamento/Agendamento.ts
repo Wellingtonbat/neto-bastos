@@ -1,7 +1,7 @@
 import { Profissional } from "../profissional";
 import { Servico } from "../servico";
 
-export type StatusAgendamento = "PENDENTE" | "CONFIRMADO" | "CANCELADO";
+export type StatusAgendamento = "PENDENTE" | "CONFIRMADO" | "CONCLUIDO" | "CANCELADO";
 
 export default interface Agendamento {
   id: number;

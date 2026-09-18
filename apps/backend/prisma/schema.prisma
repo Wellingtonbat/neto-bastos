@@ -16,6 +16,7 @@ datasource db {
 enum StatusAgendamento {
   PENDENTE
   CONFIRMADO
+  CONCLUIDO
   CANCELADO
 }
 
