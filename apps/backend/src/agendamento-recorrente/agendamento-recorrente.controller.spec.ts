@@ -3,6 +3,7 @@ import { PrismaService } from 'src/db/prisma.service';
 import { PushNotificationService } from 'src/notificacao/push-notification.service';
 import { StatusAgendamento } from '@prisma/client';
 import * as horarioResolvido from 'src/profissional/horario-resolvido';
+import * as gerarOcorrenciasModule from './gerar-ocorrencias';
 
 const HORARIO_ABERTO = {
   fechado: false,
@@ -17,7 +18,9 @@ describe('AgendamentoRecorrenteController', () => {
   function criarController() {
     const prisma = {
       usuario: { findFirst: jest.fn() },
-      servico: { findMany: jest.fn().mockResolvedValue([{ id: 1 }]) },
+      servico: {
+        findMany: jest.fn().mockResolvedValue([{ id: 1, qtdeSlots: 1 }]),
+      },
       agendamentoRecorrente: {
         create: jest.fn(),
         update: jest.fn(),
@@ -28,6 +31,7 @@ describe('AgendamentoRecorrenteController', () => {
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
         update: jest.fn(),
         findUnique: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       $transaction: jest.fn(async (ops: Promise<any>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
@@ -131,6 +135,63 @@ describe('AgendamentoRecorrenteController', () => {
 
       await new Promise((resolve) => setImmediate(resolve));
       expect(push.enviarParaTokens).toHaveBeenCalled();
+    });
+
+    it('pula ocorrencias que colidem com um agendamento ja existente, sem falhar a serie inteira', async () => {
+      const { controller, prisma } = criarController();
+      const dataComConflito = new Date('2026-09-26T11:00:00.000Z');
+      const dataLivre = new Date('2026-10-03T11:00:00.000Z');
+      jest
+        .spyOn(gerarOcorrenciasModule, 'gerarDatasOcorrencias')
+        .mockReturnValue([dataComConflito, dataLivre]);
+
+      (prisma.usuario.findFirst as jest.Mock).mockResolvedValue({
+        clienteRecorrente: true,
+      });
+      (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
+        { data: dataComConflito, servicos: [{ qtdeSlots: 1 }] },
+      ]);
+      (prisma.agendamentoRecorrente.create as jest.Mock).mockResolvedValue({
+        id: 10,
+        profissionalId: 1,
+        nomeCliente: 'Cliente Teste',
+        ocorrencias: [{ id: 1 }],
+      });
+
+      const resultado = await controller.criar(bodyValido as any);
+
+      expect(prisma.agendamentoRecorrente.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            ocorrencias: {
+              create: [
+                expect.objectContaining({ data: dataLivre }),
+              ],
+            },
+          }),
+        }),
+      );
+      expect((resultado as any).datasComConflito).toEqual(['2026-09-26']);
+    });
+
+    it('rejeita a serie quando todas as datas geradas colidem com agendamento existente', async () => {
+      const { controller, prisma } = criarController();
+      const dataComConflito = new Date('2026-09-26T11:00:00.000Z');
+      jest
+        .spyOn(gerarOcorrenciasModule, 'gerarDatasOcorrencias')
+        .mockReturnValue([dataComConflito]);
+
+      (prisma.usuario.findFirst as jest.Mock).mockResolvedValue({
+        clienteRecorrente: true,
+      });
+      (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
+        { data: dataComConflito, servicos: [{ qtdeSlots: 1 }] },
+      ]);
+
+      await expect(controller.criar(bodyValido as any)).rejects.toThrow(
+        'Todas as datas geradas para essa serie ja tem um agendamento existente para o profissional. Escolha outro dia/horario.',
+      );
+      expect(prisma.agendamentoRecorrente.create).not.toHaveBeenCalled();
     });
   });
 
@@ -260,7 +321,7 @@ describe('AgendamentoRecorrenteController', () => {
         profissionalId: 1,
         diaSemana: 6,
         horario: '08:00',
-        servicos: [{ id: 1 }],
+        servicos: [{ id: 1, qtdeSlots: 1 }],
         ocorrencias: [{ data: new Date('2026-09-26T11:00:00Z') }],
       });
       (prisma.agendamentoRecorrente.update as jest.Mock).mockResolvedValue({});
@@ -269,6 +330,36 @@ describe('AgendamentoRecorrenteController', () => {
 
       expect(resultado.ok).toBe(true);
       expect(prisma.agendamentoRecorrente.update).toHaveBeenCalled();
+    });
+
+    it('pula novas ocorrencias que colidem com um agendamento ja existente', async () => {
+      const { controller, prisma } = criarController();
+      const dataGerada = new Date('2026-10-03T11:00:00.000Z');
+      jest
+        .spyOn(gerarOcorrenciasModule, 'gerarDatasOcorrencias')
+        .mockReturnValue([dataGerada]);
+
+      (prisma.agendamentoRecorrente.findUnique as jest.Mock).mockResolvedValue({
+        id: 5,
+        ativo: true,
+        emailCliente: 'cliente@teste.com',
+        profissionalId: 1,
+        diaSemana: 6,
+        horario: '08:00',
+        servicos: [{ id: 1, qtdeSlots: 1 }],
+        ocorrencias: [{ data: new Date('2026-09-26T11:00:00Z') }],
+      });
+      (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
+        { data: dataGerada, servicos: [{ qtdeSlots: 1 }] },
+      ]);
+
+      const resultado = await controller.renovar('5');
+
+      expect(resultado).toEqual(
+        expect.objectContaining({ ok: true, criadas: 0 }),
+      );
+      expect((resultado as any).datasComConflito).toEqual(['2026-10-03']);
+      expect(prisma.agendamentoRecorrente.update).not.toHaveBeenCalled();
     });
   });
 });

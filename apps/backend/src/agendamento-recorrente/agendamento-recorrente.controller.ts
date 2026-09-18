@@ -19,10 +19,12 @@ import { PrismaService } from 'src/db/prisma.service';
 import { PushNotificationService } from 'src/notificacao/push-notification.service';
 import { REGEX_HORA } from 'src/profissional/horario-validacao';
 import {
+  formatarDataISONoFuso,
   resolverHorarioDoDia,
   validarHorarioResolvido,
 } from 'src/profissional/horario-resolvido';
 import { gerarDatasOcorrencias } from './gerar-ocorrencias';
+import { existeSobreposicao } from 'src/agendamento/verificar-conflito';
 
 const HORIZONTE_MESES = 3;
 
@@ -112,11 +114,46 @@ export class AgendamentoRecorrenteController {
 
     const servicosExistentes = await this.prisma.servico.findMany({
       where: { id: { in: servicoIds } },
-      select: { id: true },
+      select: { id: true, qtdeSlots: true },
     });
     if (servicosExistentes.length !== servicoIds.length) {
       throw new BadRequestException(
         'Um ou mais servicos informados nao existem.',
+      );
+    }
+
+    // Nao cria uma ocorrencia em cima de um agendamento ja existente (de
+    // outro cliente, ou avulso) -- pula so as datas com conflito, em vez
+    // de falhar a serie inteira.
+    const primeiraData = ocorrencias[0];
+    const ultimaData = ocorrencias[ocorrencias.length - 1];
+    const existentesNoIntervalo = await this.prisma.agendamento.findMany({
+      where: {
+        profissionalId,
+        status: { not: StatusAgendamento.CANCELADO },
+        data: {
+          gte: primeiraData,
+          lte: new Date(ultimaData.getTime() + 24 * 60 * 60 * 1000),
+        },
+      },
+      select: { data: true, servicos: { select: { qtdeSlots: true } } },
+    });
+
+    const ocorrenciasComConflito = ocorrencias.filter((data) =>
+      existeSobreposicao(
+        existentesNoIntervalo,
+        data,
+        servicosExistentes,
+        horarioResolvido.tempoSlotMinutos,
+      ),
+    );
+    const ocorrenciasSemConflito = ocorrencias.filter(
+      (data) => !ocorrenciasComConflito.includes(data),
+    );
+
+    if (ocorrenciasSemConflito.length === 0) {
+      throw new BadRequestException(
+        'Todas as datas geradas para essa serie ja tem um agendamento existente para o profissional. Escolha outro dia/horario.',
       );
     }
 
@@ -130,7 +167,7 @@ export class AgendamentoRecorrenteController {
         horario,
         servicos: { connect: servicoIds.map((id) => ({ id })) },
         ocorrencias: {
-          create: ocorrencias.map((data) => ({
+          create: ocorrenciasSemConflito.map((data) => ({
             data,
             emailCliente,
             status: StatusAgendamento.CONFIRMADO,
@@ -148,7 +185,12 @@ export class AgendamentoRecorrenteController {
       serie.ocorrencias.length,
     );
 
-    return serie;
+    return {
+      ...serie,
+      datasComConflito: ocorrenciasComConflito.map((data) =>
+        formatarDataISONoFuso(data),
+      ),
+    };
   }
 
   @Patch(':id')
@@ -295,12 +337,50 @@ export class AgendamentoRecorrenteController {
       return { ok: true, criadas: 0 };
     }
 
+    const primeiraNovaData = novasOcorrencias[0];
+    const ultimaNovaData = novasOcorrencias[novasOcorrencias.length - 1];
+    const existentesNoIntervalo = await this.prisma.agendamento.findMany({
+      where: {
+        profissionalId: serie.profissionalId,
+        status: { not: StatusAgendamento.CANCELADO },
+        data: {
+          gte: primeiraNovaData,
+          lte: new Date(ultimaNovaData.getTime() + 24 * 60 * 60 * 1000),
+        },
+      },
+      select: { data: true, servicos: { select: { qtdeSlots: true } } },
+    });
+
+    const resolvido = await resolverHorarioDoDia(
+      this.prisma,
+      serie.profissionalId,
+      primeiraNovaData,
+    );
+    const tempoSlotMinutos = resolvido?.tempoSlotMinutos ?? 15;
+
+    const novasOcorrenciasSemConflito = novasOcorrencias.filter(
+      (data) =>
+        !existeSobreposicao(
+          existentesNoIntervalo,
+          data,
+          serie.servicos,
+          tempoSlotMinutos,
+        ),
+    );
+    const datasComConflito = novasOcorrencias
+      .filter((data) => !novasOcorrenciasSemConflito.includes(data))
+      .map((data) => formatarDataISONoFuso(data));
+
+    if (novasOcorrenciasSemConflito.length === 0) {
+      return { ok: true, criadas: 0, datasComConflito };
+    }
+
     const servicoIds = serie.servicos.map((s) => s.id);
     await this.prisma.agendamentoRecorrente.update({
       where: { id: serieId },
       data: {
         ocorrencias: {
-          create: novasOcorrencias.map((data) => ({
+          create: novasOcorrenciasSemConflito.map((data) => ({
             data,
             emailCliente: serie.emailCliente,
             status: StatusAgendamento.CONFIRMADO,
@@ -311,7 +391,11 @@ export class AgendamentoRecorrenteController {
       },
     });
 
-    return { ok: true, criadas: novasOcorrencias.length };
+    return {
+      ok: true,
+      criadas: novasOcorrenciasSemConflito.length,
+      datasComConflito,
+    };
   }
 
   @Patch('ocorrencias/:agendamentoId')

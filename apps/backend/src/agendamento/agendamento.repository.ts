@@ -10,6 +10,7 @@ import {
   resolverHorarioDoDia,
   validarHorarioResolvido,
 } from 'src/profissional/horario-resolvido';
+import { existeConflitoDeHorario } from './verificar-conflito';
 
 @Injectable()
 export class AgendamentoRepository implements RepositorioAgendamento {
@@ -157,5 +158,26 @@ export class AgendamentoRepository implements RepositorioAgendamento {
     }
 
     validarHorarioResolvido(horario, DataUtils.horaMinutoNoFuso(data));
+
+    // Busca os servicos pelo id em vez de confiar no `qtdeSlots` que veio
+    // no corpo da requisicao -- o corpo e controlado pelo cliente, e um
+    // valor incorreto ali nao pode furar a checagem de conflito.
+    const servicosDb = await this.prismaService.servico.findMany({
+      where: { id: { in: agendamento.servicos.map((s) => s.id) } },
+      select: { qtdeSlots: true },
+    });
+
+    const conflito = await existeConflitoDeHorario(
+      this.prismaService,
+      agendamento.profissional.id,
+      data,
+      servicosDb,
+      horario.tempoSlotMinutos,
+    );
+    if (conflito) {
+      throw new BadRequestException(
+        'Este horario acabou de ser reservado por outro cliente. Escolha outro horario.',
+      );
+    }
   }
 }
