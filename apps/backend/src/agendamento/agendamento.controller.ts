@@ -224,7 +224,17 @@ export class AgendamentoController {
       );
     }
 
-    return this.repo.atualizarStatus(agendamentoId, StatusAgendamento.CANCELADO);
+    const atualizado = await this.repo.atualizarStatus(
+      agendamentoId,
+      StatusAgendamento.CANCELADO,
+    );
+    void this.notificarProfissionalCancelamento(
+      atualizado.profissionalId,
+      atualizado.emailCliente,
+      atualizado.data,
+      atualizado.id,
+    );
+    return atualizado;
   }
 
   private async atualizarStatusBarbeiro(
@@ -256,7 +266,11 @@ export class AgendamentoController {
         where: {
           profissionalId,
           role: {
-            in: [RoleUsuario.BARBEIRO, RoleUsuario.DONO, RoleUsuario.FUNCIONARIO],
+            in: [
+              RoleUsuario.BARBEIRO,
+              RoleUsuario.DONO,
+              RoleUsuario.FUNCIONARIO,
+            ],
           },
         },
         select: { pushToken: true, nome: true },
@@ -315,6 +329,47 @@ export class AgendamentoController {
       {
         tipo: 'STATUS_RESERVA_CLIENTE',
         status,
+        agendamentoId,
+      },
+    );
+  }
+
+  private async notificarProfissionalCancelamento(
+    profissionalId: number,
+    emailCliente: string,
+    data: Date,
+    agendamentoId: number,
+  ) {
+    const [barbeiro, cliente] = await Promise.all([
+      this.prisma.usuario.findFirst({
+        where: {
+          profissionalId,
+          role: {
+            in: [
+              RoleUsuario.BARBEIRO,
+              RoleUsuario.DONO,
+              RoleUsuario.FUNCIONARIO,
+            ],
+          },
+        },
+        select: { pushToken: true },
+      }),
+      this.prisma.usuario.findFirst({
+        where: { email: emailCliente },
+        select: { nome: true },
+      }),
+    ]);
+
+    const dataHora = new Date(data).toLocaleString('pt-BR');
+
+    await this.push.enviarParaTokens(
+      [barbeiro?.pushToken],
+      'Agendamento cancelado pelo cliente',
+      `${cliente?.nome ?? emailCliente} cancelou o agendamento de ${dataHora}.`,
+      {
+        tipo: 'CANCELAMENTO_CLIENTE_BARBEIRO',
+        emailCliente,
+        profissionalId,
         agendamentoId,
       },
     );

@@ -52,6 +52,7 @@ export class AgendamentoRepository implements RepositorioAgendamento {
     const resultado: any = await this.prismaService.agendamento.findMany({
       where: {
         profissionalId: profissional,
+        status: { not: StatusAgendamento.CANCELADO },
         data: {
           gte: inicioDoDia,
           lte: fimDoDia,
