@@ -6,6 +6,7 @@ import Agendamento from './Agendamento'
 import Usuario from './Usuario'
 import MinhaAgenda from './MinhaAgenda'
 import Icone from '../components/shared/Icone'
+import Rodape from '../components/shared/Rodape'
 import useUsuario from '../data/hooks/useUsuario'
 
 type Aba = 'Inicio' | 'Agendamento' | 'MinhaAgenda' | 'Usuario'
@@ -70,6 +71,9 @@ export default function Principal({ navigation, route }: any) {
                 {ehEquipe ? tab('Usuario', ehDono ? 'Adm' : 'Perfil', 'person-outline') : null}
             </View>
             <View style={styles.conteudo}>{renderizarConteudo()}</View>
+            <View style={{ paddingBottom: insets.bottom }}>
+                <Rodape />
+            </View>
         </View>
     )
 }
