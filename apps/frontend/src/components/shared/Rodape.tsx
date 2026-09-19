@@ -7,6 +7,8 @@ import {
 } from '@tabler/icons-react'
 import Logo from './Logo'
 
+const WHATSAPP_URL = 'https://wa.me/557583069919'
+
 export default function Rodape() {
     return (
         <footer className="flex items-center bg-black">
@@ -22,10 +24,15 @@ export default function Rodape() {
                     <div className="flex flex-col gap-1 items-center md:items-start">
                         <span className="text-2xl text-zinc-300 font-bold mb-2.5">Contato</span>
                         <span className="text-sm text-zinc-400">suporte@netobastos.com.br</span>
-                        <div className="flex items-center gap-2 text-sm text-zinc-400">
+                        <a
+                            href={WHATSAPP_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200"
+                        >
                             <IconBrandWhatsapp size={20} className="text-green-500" />
                             <span>Whatsapp</span>
-                        </div>
+                        </a>
                     </div>
                 </div>
                 <div className="flex flex-col md:flex-row justify-between items-center gap-5">
@@ -43,6 +50,8 @@ export default function Rodape() {
                         </div>
                         <span className="hidden md:inline-block">-</span>
                         <span>Todos os direitos reservados</span>
+                        <span className="hidden md:inline-block">-</span>
+                        <span>© 2026 Well Tech</span>
                     </div>
                 </div>
             </div>
