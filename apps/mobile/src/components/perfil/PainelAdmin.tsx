@@ -11,6 +11,7 @@ import {
     View,
 } from 'react-native'
 import useAPI from '@/src/data/hooks/useAPI'
+import SeletorHora from '../shared/SeletorHora'
 import GerenciarBarbeiros from './GerenciarBarbeiros'
 import FinalizarAtendimentoModal from './FinalizarAtendimentoModal'
 import ClientesTab from './ClientesTab'
@@ -851,20 +852,8 @@ export default function PainelAdmin(props: PainelAdminProps) {
                     })}
                 </View>
 
-                <TextInput
-                    placeholder="Hora inicio (HH:mm)"
-                    placeholderTextColor="#71717a"
-                    value={horaInicio}
-                    onChangeText={setHoraInicio}
-                    style={styles.input}
-                />
-                <TextInput
-                    placeholder="Hora fim (HH:mm)"
-                    placeholderTextColor="#71717a"
-                    value={horaFim}
-                    onChangeText={setHoraFim}
-                    style={styles.input}
-                />
+                <SeletorHora valor={horaInicio} aoAlterar={setHoraInicio} placeholder="Hora inicio" />
+                <SeletorHora valor={horaFim} aoAlterar={setHoraFim} placeholder="Hora fim" />
                 <TextInput
                     placeholder="Tempo slot (min)"
                     placeholderTextColor="#71717a"
@@ -885,20 +874,8 @@ export default function PainelAdmin(props: PainelAdminProps) {
 
                 {temAlmoco ? (
                     <>
-                        <TextInput
-                            placeholder="Almoco inicio (HH:mm)"
-                            placeholderTextColor="#71717a"
-                            value={horaAlmocoInicio}
-                            onChangeText={setHoraAlmocoInicio}
-                            style={styles.input}
-                        />
-                        <TextInput
-                            placeholder="Almoco fim (HH:mm)"
-                            placeholderTextColor="#71717a"
-                            value={horaAlmocoFim}
-                            onChangeText={setHoraAlmocoFim}
-                            style={styles.input}
-                        />
+                        <SeletorHora valor={horaAlmocoInicio} aoAlterar={setHoraAlmocoInicio} placeholder="Almoco inicio" />
+                        <SeletorHora valor={horaAlmocoFim} aoAlterar={setHoraAlmocoFim} placeholder="Almoco fim" />
                     </>
                 ) : null}
 
@@ -935,19 +912,15 @@ export default function PainelAdmin(props: PainelAdminProps) {
 
                             {form.ativo ? (
                                 <>
-                                    <TextInput
-                                        placeholder="Hora inicio (HH:mm)"
-                                        placeholderTextColor="#71717a"
-                                        value={form.horaInicio}
-                                        onChangeText={(v) => alterarDiaSemanal(indice, { horaInicio: v })}
-                                        style={styles.input}
+                                    <SeletorHora
+                                        valor={form.horaInicio}
+                                        aoAlterar={(v) => alterarDiaSemanal(indice, { horaInicio: v })}
+                                        placeholder="Hora inicio"
                                     />
-                                    <TextInput
-                                        placeholder="Hora fim (HH:mm)"
-                                        placeholderTextColor="#71717a"
-                                        value={form.horaFim}
-                                        onChangeText={(v) => alterarDiaSemanal(indice, { horaFim: v })}
-                                        style={styles.input}
+                                    <SeletorHora
+                                        valor={form.horaFim}
+                                        aoAlterar={(v) => alterarDiaSemanal(indice, { horaFim: v })}
+                                        placeholder="Hora fim"
                                     />
                                     <TextInput
                                         placeholder="Tempo slot (min, opcional)"
@@ -969,19 +942,15 @@ export default function PainelAdmin(props: PainelAdminProps) {
 
                                     {form.temAlmoco ? (
                                         <>
-                                            <TextInput
-                                                placeholder="Almoco inicio (HH:mm)"
-                                                placeholderTextColor="#71717a"
-                                                value={form.horaAlmocoInicio}
-                                                onChangeText={(v) => alterarDiaSemanal(indice, { horaAlmocoInicio: v })}
-                                                style={styles.input}
+                                            <SeletorHora
+                                                valor={form.horaAlmocoInicio}
+                                                aoAlterar={(v) => alterarDiaSemanal(indice, { horaAlmocoInicio: v })}
+                                                placeholder="Almoco inicio"
                                             />
-                                            <TextInput
-                                                placeholder="Almoco fim (HH:mm)"
-                                                placeholderTextColor="#71717a"
-                                                value={form.horaAlmocoFim}
-                                                onChangeText={(v) => alterarDiaSemanal(indice, { horaAlmocoFim: v })}
-                                                style={styles.input}
+                                            <SeletorHora
+                                                valor={form.horaAlmocoFim}
+                                                aoAlterar={(v) => alterarDiaSemanal(indice, { horaAlmocoFim: v })}
+                                                placeholder="Almoco fim"
                                             />
                                         </>
                                     ) : null}
@@ -1050,20 +1019,8 @@ export default function PainelAdmin(props: PainelAdminProps) {
 
                 {!novaExcecaoFechado ? (
                     <>
-                        <TextInput
-                            placeholder="Hora inicio (HH:mm)"
-                            placeholderTextColor="#71717a"
-                            value={novaExcecaoHoraInicio}
-                            onChangeText={setNovaExcecaoHoraInicio}
-                            style={styles.input}
-                        />
-                        <TextInput
-                            placeholder="Hora fim (HH:mm)"
-                            placeholderTextColor="#71717a"
-                            value={novaExcecaoHoraFim}
-                            onChangeText={setNovaExcecaoHoraFim}
-                            style={styles.input}
-                        />
+                        <SeletorHora valor={novaExcecaoHoraInicio} aoAlterar={setNovaExcecaoHoraInicio} placeholder="Hora inicio" />
+                        <SeletorHora valor={novaExcecaoHoraFim} aoAlterar={setNovaExcecaoHoraFim} placeholder="Hora fim" />
                     </>
                 ) : null}
 

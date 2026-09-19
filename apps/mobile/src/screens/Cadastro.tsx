@@ -89,7 +89,10 @@ export default function Cadastro({ navigation }: any) {
     async function handleEntrar() {
         try {
             setCarregando(true)
-            await cadastrar()
+            const aviso = await cadastrar()
+            if (aviso) {
+                Alert.alert('Aviso', aviso)
+            }
         } catch (erro: any) {
             Alert.alert('Erro ao entrar', erro?.message ?? 'Nao foi possivel concluir o login.')
         } finally {

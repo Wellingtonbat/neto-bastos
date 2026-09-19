@@ -390,7 +390,10 @@ export default function GerenciarBarbeiros() {
                     }
                 }
 
-                await httpPost('auth/barbeiros', payload)
+                const resultado = await httpPost('auth/barbeiros', payload)
+                if (resultado?.aviso) {
+                    Alert.alert('Aviso', resultado.aviso)
+                }
             }
 
             setModalAberto(false)

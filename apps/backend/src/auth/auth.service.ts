@@ -9,6 +9,7 @@ import { Prisma, RoleUsuario, Usuario } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
+import { verificarCadastroDuplicado } from './verificar-duplicado';
 
 const TAMANHO_MINIMO_SENHA = 6;
 
@@ -82,6 +83,7 @@ export class AuthService {
     });
 
     let usuario: Usuario;
+    let avisoNome: string | undefined;
 
     if (!usuarioExistente) {
       // Cadastro novo.
@@ -89,6 +91,13 @@ export class AuthService {
       if (!nome) {
         throw new BadRequestException('Nome é obrigatório para o cadastro.');
       }
+
+      avisoNome = (
+        await verificarCadastroDuplicado(this.prisma, {
+          nome,
+          telefone: input.telefone,
+        })
+      ).avisoNome;
 
       const senhaHash = await bcrypt.hash(senha, 10);
       usuario = await this.prisma.usuario.create({
@@ -130,7 +139,7 @@ export class AuthService {
           : usuarioExistente;
     }
 
-    return this.emitirToken(usuario);
+    return { ...this.emitirToken(usuario), ...(avisoNome ? { aviso: avisoNome } : {}) };
   }
 
   private async upsertAutenticadoPorProvedor(input: {
@@ -423,6 +432,15 @@ export class AuthService {
       }
     }
 
+    const usuarioExistente = await this.prisma.usuario.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    const avisoNome = usuarioExistente
+      ? undefined
+      : (await verificarCadastroDuplicado(this.prisma, { nome, telefone: input.telefone }))
+          .avisoNome;
+
     let usuario;
     try {
       usuario = await this.prisma.usuario.upsert({
@@ -458,6 +476,7 @@ export class AuthService {
       nome: usuario.nome,
       role: usuario.role,
       profissionalId: usuario.profissionalId,
+      ...(avisoNome ? { aviso: avisoNome } : {}),
     };
   }
 

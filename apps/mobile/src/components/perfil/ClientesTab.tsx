@@ -12,6 +12,7 @@ import {
 import { Profissional, Servico } from '@neto-bastos/core'
 import useAPI from '@/src/data/hooks/useAPI'
 import useAgendamento from '@/src/data/hooks/useAgendamento'
+import SeletorHora from '../shared/SeletorHora'
 import Passos from '../agendamento/Passos'
 import ProfissionalInput from '../agendamento/ProfissionalInput'
 import ServicosInput from '../agendamento/ServicosInput'
@@ -409,13 +410,7 @@ export default function ClientesTab(props: ClientesTabProps) {
                                 ))}
                             </View>
 
-                            <TextInput
-                                placeholder="Horario (HH:mm)"
-                                placeholderTextColor="#71717a"
-                                value={horarioRecorrente}
-                                onChangeText={setHorarioRecorrente}
-                                style={styles.input}
-                            />
+                            <SeletorHora valor={horarioRecorrente} aoAlterar={setHorarioRecorrente} placeholder="Horario" />
 
                             <View style={styles.linha}>
                                 {props.servicos.map((servico) => (

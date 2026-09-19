@@ -46,17 +46,18 @@ export default function useFormUsuario() {
     return Object.keys(errors).length === 0;
   }
 
-  async function cadastrar() {
+  async function cadastrar(): Promise<string | undefined> {
     setErroEnvio("");
     if (validate()) {
       try {
-        const usuarioAutenticado = await httpPost("auth/login", {
+        const { aviso, ...usuarioAutenticado } = await httpPost("auth/login", {
           nome: nome.trim(),
           email: email.trim().toLowerCase(),
           telefone,
           senha,
         });
         await entrar(usuarioAutenticado);
+        return aviso;
       } catch (e: any) {
         setErroEnvio(e?.message ?? "Não foi possível entrar.");
         throw e;
