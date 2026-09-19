@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Profissional, Usuario } from '@neto-bastos/core'
 import useAPI from '@/data/hooks/useAPI'
+import SeletorHora from '@/components/shared/SeletorHora'
 import { DIAS_SEMANA } from './adminShared'
 
 const REGEX_HORA = /^([01]\d|2[0-3]):([0-5]\d)$/
@@ -442,17 +443,15 @@ export default function AgendaTab(props: AgendaTabProps) {
                     placeholder="Tempo por slot (min)"
                 />
 
-                <input
-                    type="time"
+                <SeletorHora
                     value={horaInicio}
-                    onChange={(e) => setHoraInicio(e.target.value)}
-                    className={`bg-zinc-900 border rounded px-3 py-2 ${erroHoraInicio || erroJanelaHora ? 'border-red-500' : 'border-zinc-700'}`}
+                    onChange={setHoraInicio}
+                    className={`bg-zinc-900 border rounded px-3 py-2 text-left ${erroHoraInicio || erroJanelaHora ? 'border-red-500' : 'border-zinc-700'}`}
                 />
-                <input
-                    type="time"
+                <SeletorHora
                     value={horaFim}
-                    onChange={(e) => setHoraFim(e.target.value)}
-                    className={`bg-zinc-900 border rounded px-3 py-2 ${erroHoraFimFormato || erroJanelaHora ? 'border-red-500' : 'border-zinc-700'}`}
+                    onChange={setHoraFim}
+                    className={`bg-zinc-900 border rounded px-3 py-2 text-left ${erroHoraFimFormato || erroJanelaHora ? 'border-red-500' : 'border-zinc-700'}`}
                 />
             </div>
 
@@ -496,17 +495,15 @@ export default function AgendaTab(props: AgendaTabProps) {
 
                 {temAlmoco ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <input
-                            type="time"
+                        <SeletorHora
                             value={horaAlmocoInicio}
-                            onChange={(e) => setHoraAlmocoInicio(e.target.value)}
-                            className={`bg-zinc-900 border rounded px-3 py-2 ${erroHoraAlmocoInicio || erroJanelaAlmoco || erroAlmocoForaDaJanela ? 'border-red-500' : 'border-zinc-700'}`}
+                            onChange={setHoraAlmocoInicio}
+                            className={`bg-zinc-900 border rounded px-3 py-2 text-left ${erroHoraAlmocoInicio || erroJanelaAlmoco || erroAlmocoForaDaJanela ? 'border-red-500' : 'border-zinc-700'}`}
                         />
-                        <input
-                            type="time"
+                        <SeletorHora
                             value={horaAlmocoFim}
-                            onChange={(e) => setHoraAlmocoFim(e.target.value)}
-                            className={`bg-zinc-900 border rounded px-3 py-2 ${erroHoraAlmocoFim || erroJanelaAlmoco || erroAlmocoForaDaJanela ? 'border-red-500' : 'border-zinc-700'}`}
+                            onChange={setHoraAlmocoFim}
+                            className={`bg-zinc-900 border rounded px-3 py-2 text-left ${erroHoraAlmocoFim || erroJanelaAlmoco || erroAlmocoForaDaJanela ? 'border-red-500' : 'border-zinc-700'}`}
                         />
                     </div>
                 ) : null}
@@ -550,19 +547,15 @@ export default function AgendaTab(props: AgendaTabProps) {
 
                                     {form.ativo ? (
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 pl-6">
-                                            <input
-                                                type="time"
+                                            <SeletorHora
                                                 value={form.horaInicio}
-                                                onChange={(e) =>
-                                                    alterarDiaSemanal(indice, { horaInicio: e.target.value })
-                                                }
-                                                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                                onChange={(valor) => alterarDiaSemanal(indice, { horaInicio: valor })}
+                                                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-left"
                                             />
-                                            <input
-                                                type="time"
+                                            <SeletorHora
                                                 value={form.horaFim}
-                                                onChange={(e) => alterarDiaSemanal(indice, { horaFim: e.target.value })}
-                                                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                                onChange={(valor) => alterarDiaSemanal(indice, { horaFim: valor })}
+                                                className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-left"
                                             />
                                             <input
                                                 type="number"
@@ -589,25 +582,23 @@ export default function AgendaTab(props: AgendaTabProps) {
 
                                             {form.temAlmoco ? (
                                                 <>
-                                                    <input
-                                                        type="time"
+                                                    <SeletorHora
                                                         value={form.horaAlmocoInicio}
-                                                        onChange={(e) =>
+                                                        onChange={(valor) =>
                                                             alterarDiaSemanal(indice, {
-                                                                horaAlmocoInicio: e.target.value,
+                                                                horaAlmocoInicio: valor,
                                                             })
                                                         }
-                                                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-left"
                                                     />
-                                                    <input
-                                                        type="time"
+                                                    <SeletorHora
                                                         value={form.horaAlmocoFim}
-                                                        onChange={(e) =>
+                                                        onChange={(valor) =>
                                                             alterarDiaSemanal(indice, {
-                                                                horaAlmocoFim: e.target.value,
+                                                                horaAlmocoFim: valor,
                                                             })
                                                         }
-                                                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-left"
                                                     />
                                                 </>
                                             ) : null}
@@ -681,17 +672,15 @@ export default function AgendaTab(props: AgendaTabProps) {
                         </label>
                         {!novaExcecaoFechado ? (
                             <>
-                                <input
-                                    type="time"
+                                <SeletorHora
                                     value={novaExcecaoHoraInicio}
-                                    onChange={(e) => setNovaExcecaoHoraInicio(e.target.value)}
-                                    className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                    onChange={setNovaExcecaoHoraInicio}
+                                    className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-left"
                                 />
-                                <input
-                                    type="time"
+                                <SeletorHora
                                     value={novaExcecaoHoraFim}
-                                    onChange={(e) => setNovaExcecaoHoraFim(e.target.value)}
-                                    className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                    onChange={setNovaExcecaoHoraFim}
+                                    className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-left"
                                 />
                             </>
                         ) : null}

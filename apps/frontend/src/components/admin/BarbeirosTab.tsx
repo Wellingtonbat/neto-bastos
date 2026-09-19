@@ -304,7 +304,10 @@ export default function BarbeirosTab(props: BarbeirosTabProps) {
                 }
             }
 
-            await httpPost('auth/barbeiros', payload)
+            const resultado = await httpPost('auth/barbeiros', payload)
+            if (resultado?.aviso) {
+                window.alert(resultado.aviso)
+            }
 
             limparFormularioBarbeiro()
             setModalBarbeiroAberto(false)

@@ -17,7 +17,7 @@ export interface CredenciaisLogin {
 export interface ContextoUsuarioProps {
     carregando: boolean
     usuario: Usuario | null
-    entrar: (credenciais: CredenciaisLogin) => Promise<void>
+    entrar: (credenciais: CredenciaisLogin) => Promise<string | undefined>
     entrarComGoogle: (idToken: string) => Promise<void>
     sair: () => void
 }
@@ -86,9 +86,10 @@ export function ProvedorUsuario({ children }: any) {
             throw new Error(mensagem)
         }
 
-        const autenticado = await res.json()
+        const { aviso, ...autenticado } = await res.json()
         setUsuario(autenticado)
         set('usuario', autenticado)
+        return aviso
     }
 
     async function entrarComGoogle(idToken: string) {

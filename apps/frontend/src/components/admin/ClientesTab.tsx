@@ -5,6 +5,7 @@ import { Profissional, Servico } from '@neto-bastos/core'
 import useAPI from '@/data/hooks/useAPI'
 import useAgendamento from '@/data/hooks/useAgendamento'
 import useServicos from '@/data/hooks/useServicos'
+import SeletorHora from '@/components/shared/SeletorHora'
 import Passos from '@/components/shared/Passos'
 import Sumario from '@/components/agendamento/Sumario'
 import ProfissionalInput from '@/components/agendamento/ProfissionalInput'
@@ -384,11 +385,10 @@ export default function ClientesTab(props: ClientesTabProps) {
                                             {dia.label}
                                         </button>
                                     ))}
-                                    <input
-                                        type="time"
+                                    <SeletorHora
                                         value={horarioRecorrente}
-                                        onChange={(e) => setHorarioRecorrente(e.target.value)}
-                                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2"
+                                        onChange={setHorarioRecorrente}
+                                        className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-left"
                                     />
                                 </div>
 

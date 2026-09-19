@@ -53,7 +53,10 @@ export default function FormUsuario() {
         try {
             setErro('')
             setEnviando(true)
-            await entrar({ nome: nomeAparado, email: emailAparado, telefone, senha })
+            const aviso = await entrar({ nome: nomeAparado, email: emailAparado, telefone, senha })
+            if (aviso) {
+                window.alert(aviso)
+            }
         } catch (e: any) {
             setErro(e?.message ?? 'Não foi possível entrar.')
         } finally {
