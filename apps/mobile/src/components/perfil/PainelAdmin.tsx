@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     ActivityIndicator,
     Alert,
+    Image,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -10,8 +11,11 @@ import {
     TextInput,
     View,
 } from 'react-native'
+import * as ImagePicker from 'expo-image-picker'
 import useAPI from '@/src/data/hooks/useAPI'
+import { URL_BASE } from '@/src/data/constants/ambiente'
 import SeletorHora from '../shared/SeletorHora'
+import SeletorData from '../shared/SeletorData'
 import GerenciarBarbeiros from './GerenciarBarbeiros'
 import FinalizarAtendimentoModal from './FinalizarAtendimentoModal'
 import ClientesTab from './ClientesTab'
@@ -137,7 +141,7 @@ function formatarDataHora(valor: Date | string) {
 }
 
 export default function PainelAdmin(props: PainelAdminProps) {
-    const { httpGet, httpPost, httpPatch, httpDelete } = useAPI()
+    const { httpGet, httpPost, httpPatch, httpDelete, httpPostFormData } = useAPI()
     const { solicitarAtualizacaoAgendamentos } = useAgendamento()
     const [abaAtiva, setAbaAtiva] = useState<AbaAdmin>('AGENDAMENTOS')
 
@@ -150,6 +154,12 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const [filtroProfissional, setFiltroProfissional] = useState<string>('todos')
     const [filtroData, setFiltroData] = useState<string>(dataYYYYMMDD(new Date()))
 
+    const datasRapidas = [
+        dataYYYYMMDD(new Date()),
+        dataYYYYMMDD(new Date(Date.now() + 86400000)),
+        '',
+    ]
+
     const [carregando, setCarregando] = useState(false)
     const [acao, setAcao] = useState<Acao>(null)
     const [erro, setErro] = useState('')
@@ -159,6 +169,7 @@ export default function PainelAdmin(props: PainelAdminProps) {
     const [novoPrecoServico, setNovoPrecoServico] = useState('')
     const [novoSlotsServico, setNovoSlotsServico] = useState('1')
     const [novaImagemServico, setNovaImagemServico] = useState('/servicos/corte-de-cabelo.jpg')
+    const [carregandoUploadServico, setCarregandoUploadServico] = useState(false)
     const [servicoEditandoId, setServicoEditandoId] = useState<number | null>(null)
 
     const [profissionalAgendaId, setProfissionalAgendaId] = useState<string>('')
@@ -210,6 +221,14 @@ export default function PainelAdmin(props: PainelAdminProps) {
         const duracoes = minutosPorSlotDisponiveis.map((min) => `${slots * min} min`)
         return `${slots} slot(s) ≈ ${duracoes.join(' / ')} (conforme o profissional)`
     }, [novoSlotsServico, minutosPorSlotDisponiveis])
+
+    const imagemPreviewServico = useMemo(() => {
+        if (!novaImagemServico) return ''
+        if (novaImagemServico.startsWith('http://') || novaImagemServico.startsWith('https://')) {
+            return novaImagemServico
+        }
+        return `${URL_BASE}${novaImagemServico}`
+    }, [novaImagemServico])
 
     const carregarProfissionais = useCallback(async () => {
         const data = await httpGet('profissional')
@@ -482,6 +501,45 @@ export default function PainelAdmin(props: PainelAdminProps) {
         setNovaImagemServico('/servicos/corte-de-cabelo.jpg')
     }
 
+    async function selecionarEEnviarImagemServico() {
+        try {
+            setCarregandoUploadServico(true)
+
+            const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync()
+            if (!permissao.granted) {
+                Alert.alert('Permissao negada', 'Permissao de galeria negada.')
+                return
+            }
+
+            const resultado = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                quality: 0.9,
+            })
+
+            if (resultado.canceled || !resultado.assets?.length) return
+
+            const arquivo = resultado.assets[0]
+            const formData = new FormData()
+            formData.append('arquivo', {
+                uri: arquivo.uri,
+                name: arquivo.fileName ?? `servico-${Date.now()}.jpg`,
+                type: arquivo.mimeType ?? 'image/jpeg',
+            } as any)
+
+            const data = await httpPostFormData('servico/upload-imagem', formData)
+            if (!data?.imagemURL) {
+                throw new Error('Backend nao retornou URL da imagem do servico.')
+            }
+
+            setNovaImagemServico(data.imagemURL)
+        } catch (e: any) {
+            Alert.alert('Erro', e?.message ?? 'Falha ao enviar imagem do servico.')
+        } finally {
+            setCarregandoUploadServico(false)
+        }
+    }
+
     async function salvarServico() {
         try {
             const preco = Number(String(novoPrecoServico).replace(',', '.'))
@@ -632,6 +690,16 @@ export default function PainelAdmin(props: PainelAdminProps) {
                             </Pressable>
                         )
                     })}
+                    <SeletorData
+                        valor={filtroData}
+                        aoAlterar={setFiltroData}
+                        ativo={!!filtroData && !datasRapidas.includes(filtroData)}
+                        label={
+                            filtroData && !datasRapidas.includes(filtroData)
+                                ? new Date(`${filtroData}T00:00:00`).toLocaleDateString('pt-BR')
+                                : 'Escolher data'
+                        }
+                    />
                 </ScrollView>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtrosRow}>
@@ -780,6 +848,20 @@ export default function PainelAdmin(props: PainelAdminProps) {
                         onChangeText={setNovaImagemServico}
                         style={styles.input}
                     />
+
+                    <Pressable
+                        style={[styles.botaoUpload, carregandoUploadServico ? styles.botaoUploadDesabilitado : null]}
+                        onPress={selecionarEEnviarImagemServico}
+                        disabled={carregandoUploadServico}
+                    >
+                        <Text style={styles.textoBotaoUpload}>
+                            {carregandoUploadServico ? 'Enviando imagem...' : 'Escolher imagem da galeria'}
+                        </Text>
+                    </Pressable>
+
+                    {imagemPreviewServico ? (
+                        <Image source={{ uri: imagemPreviewServico }} style={styles.previewImagem} />
+                    ) : null}
 
                     <Pressable style={styles.botaoPrimario} onPress={salvarServico}>
                         <Text style={styles.botaoPrimarioTexto}>
@@ -1218,6 +1300,28 @@ const styles = StyleSheet.create({
         color: '#0b0f14',
         textAlign: 'center',
         fontWeight: '700',
+    },
+    botaoUpload: {
+        marginTop: 4,
+        backgroundColor: '#0369a1',
+        borderRadius: 8,
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    botaoUploadDesabilitado: {
+        opacity: 0.6,
+    },
+    textoBotaoUpload: {
+        color: '#fff',
+        fontWeight: '700',
+    },
+    previewImagem: {
+        marginTop: 10,
+        width: '100%',
+        height: 150,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#2e2e2e',
     },
     subtitulo: {
         color: '#d4d4d8',
