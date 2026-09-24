@@ -48,6 +48,7 @@ export interface AuthPayload {
   id: number;
   email: string;
   nome: string;
+  telefone: string | null;
   role: RoleUsuario;
   profissionalId: number | null;
 }
@@ -175,6 +176,7 @@ export class AuthService {
       id: usuario.id,
       email: usuario.email,
       nome: usuario.nome,
+      telefone: usuario.telefone,
       role: usuario.role,
       profissionalId: usuario.profissionalId,
     };
@@ -246,6 +248,7 @@ export class AuthService {
         id: true,
         email: true,
         nome: true,
+        telefone: true,
         role: true,
         profissionalId: true,
       },
@@ -260,6 +263,7 @@ export class AuthService {
       id: usuario.id,
       email: usuario.email,
       nome: usuario.nome,
+      telefone: usuario.telefone,
       role: usuario.role,
       profissionalId: usuario.profissionalId,
     };
@@ -297,6 +301,28 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Token inválido ou expirado.');
     }
+  }
+
+  async atualizarMeuPerfil(
+    usuarioId: number,
+    input: { nome?: string; telefone?: string },
+  ) {
+    const nome = (input.nome ?? '').trim();
+    if (!nome) {
+      throw new BadRequestException('Nome é obrigatório.');
+    }
+
+    const telefone = (input.telefone ?? '').replace(/\D/g, '');
+
+    const usuario = await this.prisma.usuario.update({
+      where: { id: usuarioId },
+      data: {
+        nome,
+        telefone: telefone || null,
+      },
+    });
+
+    return this.emitirToken(usuario);
   }
 
   async atualizarPerfil(usuarioId: number, input: AtualizarPerfilInput) {

@@ -97,6 +97,62 @@ describe('AuthService', () => {
     });
   });
 
+  describe('atualizarMeuPerfil', () => {
+    it('atualiza nome e telefone (normalizando o telefone) e retorna um novo token', async () => {
+      const { service, prisma } = criarService();
+      (prisma.usuario.update as jest.Mock).mockResolvedValue({
+        id: 3,
+        email: 'cliente@teste.com',
+        nome: 'Novo Nome',
+        telefone: '75988887777',
+        role: RoleUsuario.CLIENTE,
+        profissionalId: null,
+      });
+
+      const resultado = await service.atualizarMeuPerfil(3, {
+        nome: '  Novo Nome  ',
+        telefone: '(75) 98888-7777',
+      });
+
+      expect(prisma.usuario.update).toHaveBeenCalledWith({
+        where: { id: 3 },
+        data: { nome: 'Novo Nome', telefone: '75988887777' },
+      });
+      expect(resultado.nome).toBe('Novo Nome');
+      expect(resultado.telefone).toBe('75988887777');
+      expect(resultado.token).toBeDefined();
+    });
+
+    it('permite limpar o telefone enviando vazio', async () => {
+      const { service, prisma } = criarService();
+      (prisma.usuario.update as jest.Mock).mockResolvedValue({
+        id: 3,
+        email: 'cliente@teste.com',
+        nome: 'Cliente',
+        telefone: null,
+        role: RoleUsuario.CLIENTE,
+        profissionalId: null,
+      });
+
+      await service.atualizarMeuPerfil(3, { nome: 'Cliente', telefone: '' });
+
+      expect(prisma.usuario.update).toHaveBeenCalledWith({
+        where: { id: 3 },
+        data: { nome: 'Cliente', telefone: null },
+      });
+    });
+
+    it('rejeita nome vazio', async () => {
+      const { service, prisma } = criarService();
+
+      await expect(
+        service.atualizarMeuPerfil(3, { nome: '   ' }),
+      ).rejects.toThrow('Nome é obrigatório.');
+
+      expect(prisma.usuario.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('login', () => {
     it('bloqueia o cadastro novo quando o telefone ja pertence a outra conta', async () => {
       const { service, prisma } = criarService();

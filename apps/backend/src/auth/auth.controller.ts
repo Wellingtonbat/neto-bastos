@@ -47,6 +47,19 @@ export class AuthController {
     return this.authService.obterUsuarioAtual(req.user);
   }
 
+  @Patch('me')
+  @UseGuards(AuthGuard)
+  atualizarMeuPerfil(
+    @Req() req: any,
+    @Body()
+    body: {
+      nome?: string;
+      telefone?: string;
+    },
+  ) {
+    return this.authService.atualizarMeuPerfil(req.user.id, body);
+  }
+
   @Patch('me/push-token')
   @UseGuards(AuthGuard)
   atualizarPushToken(
