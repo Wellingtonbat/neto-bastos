@@ -20,6 +20,7 @@ export interface ContextoUsuarioProps {
     entrar: (credenciais: CredenciaisLogin) => Promise<string | undefined>
     entrarComGoogle: (idToken: string) => Promise<void>
     sair: () => void
+    limparSessao: () => void
 }
 
 const ContextoUsuario = createContext<ContextoUsuarioProps>({} as any)
@@ -120,6 +121,16 @@ export function ProvedorUsuario({ children }: any) {
         remove('usuario')
     }
 
+    // So limpa o estado -- nao navega. Usado quando uma chamada autenticada
+    // volta 401 (token expirado/invalido): o ForcarUsuario (layout das
+    // rotas internas) ja reage a usuario==null redirecionando pra
+    // /entrar?destino=..., entao navegar aqui tambem causaria uma corrida
+    // entre dois router.push.
+    function limparSessao() {
+        setUsuario(null)
+        remove('usuario')
+    }
+
     useEffect(() => {
         carregarUsuario()
     }, [carregarUsuario])
@@ -132,6 +143,7 @@ export function ProvedorUsuario({ children }: any) {
                 entrar,
                 entrarComGoogle,
                 sair,
+                limparSessao,
             }}
         >
             {children}
