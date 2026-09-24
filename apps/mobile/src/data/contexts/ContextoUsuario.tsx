@@ -6,6 +6,7 @@ import * as Notifications from 'expo-notifications'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 import { URL_BASE } from '../constants/ambiente'
+import { navegarParaLogin } from '../navigation/navigationRef'
 
 const CHAVE_PERMISSAO_PUSH_SOLICITADA = 'push-permissao-solicitada'
 
@@ -14,6 +15,7 @@ export interface ContextoUsuarioProps {
     usuario: Usuario | null
     entrar: (usuario: Usuario) => Promise<void>
     sair: () => void
+    limparSessao: () => void
 }
 
 const ContextoUsuario = createContext<ContextoUsuarioProps>({} as any)
@@ -98,6 +100,16 @@ export function ProvedorUsuario({ children }: any) {
         set('usuario', null)
     }
 
+    // Usado quando uma chamada autenticada volta 401 (token expirado/
+    // invalido): limpa a sessao e leva o usuario de volta pra tela de
+    // login, diferente de sair() porque precisa navegar explicitamente --
+    // aqui nao existe um gate reativo tipo o ForcarUsuario do frontend web.
+    function limparSessao() {
+        setUsuario(null)
+        set('usuario', null)
+        navegarParaLogin()
+    }
+
     useEffect(() => {
         carregarUsuario()
     }, [carregarUsuario])
@@ -109,6 +121,7 @@ export function ProvedorUsuario({ children }: any) {
                 usuario,
                 entrar,
                 sair,
+                limparSessao,
             }}
         >
             {children}

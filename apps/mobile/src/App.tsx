@@ -7,6 +7,7 @@ import { NavigationContainer } from '@react-navigation/native'
 import Cadastro from './screens/Cadastro'
 import Principal from './screens/Principal'
 import Sumario from './screens/Sumario'
+import { navigationRef } from './data/navigation/navigationRef'
 import * as Notifications from 'expo-notifications'
 import * as WebBrowser from 'expo-web-browser'
 
@@ -31,7 +32,7 @@ export default function App() {
         <SafeAreaProvider>
             <ProvedorUsuario>
                 <ProvedorAgendamento>
-                    <NavigationContainer>
+                    <NavigationContainer ref={navigationRef}>
                         <Stack.Navigator>
                             <Stack.Screen
                                 name="Cadastro"

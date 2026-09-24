@@ -2,7 +2,29 @@ import { AgendamentoRepository } from './agendamento.repository';
 import { PrismaService } from 'src/db/prisma.service';
 import { StatusAgendamento } from '@prisma/client';
 
-// 2026-09-21 e uma segunda-feira (diaSemana=1 no fuso America/Sao_Paulo).
+// Calculada em vez de hardcoded para nunca virar uma data passada (o que
+// faria "criar" rejeitar por "data que ja passou" antes mesmo de chegar na
+// logica sob teste). Sempre cai numa segunda-feira (diaSemana=1 no fuso
+// America/Sao_Paulo), com folga de mais de uma semana a partir de hoje.
+function proximaSegundaFutura(): Date {
+  const hoje = new Date();
+  const diasAteSegunda = ((1 - hoje.getUTCDay() + 7) % 7) || 7;
+  const segunda = new Date(hoje);
+  segunda.setUTCDate(hoje.getUTCDate() + diasAteSegunda + 7);
+  segunda.setUTCHours(0, 0, 0, 0);
+  return segunda;
+}
+
+function formatarDataISO(data: Date): string {
+  return data.toISOString().slice(0, 10);
+}
+
+const SEGUNDA = proximaSegundaFutura();
+const DIA_BASE = formatarDataISO(SEGUNDA);
+const DOMINGO_ANTERIOR = formatarDataISO(
+  new Date(SEGUNDA.getTime() - 24 * 60 * 60 * 1000),
+);
+
 const PROFISSIONAL_BASE = {
   id: 1,
   diasTrabalho: [1, 2, 3, 4, 5],
@@ -62,7 +84,7 @@ describe('AgendamentoRepository', () => {
       // Segunda-feira 10:00 no fuso de Brasilia -- dentro do horario base
       // (08:00-19:00), mas fora do override semanal (14:00-20:00).
       await expect(
-        repositorio.criar(agendamentoPara('2026-09-21T13:00:00Z')),
+        repositorio.criar(agendamentoPara(`${DIA_BASE}T13:00:00Z`)),
       ).rejects.toThrow(
         'Horario fora da janela de atendimento do profissional.',
       );
@@ -79,7 +101,7 @@ describe('AgendamentoRepository', () => {
       });
 
       // Segunda-feira 14:00 no fuso de Brasilia -- inicio do override.
-      await repositorio.criar(agendamentoPara('2026-09-21T17:00:00Z'));
+      await repositorio.criar(agendamentoPara(`${DIA_BASE}T17:00:00Z`));
 
       expect(prisma.agendamento.create).toHaveBeenCalled();
     });
@@ -96,7 +118,7 @@ describe('AgendamentoRepository', () => {
       });
 
       await expect(
-        repositorio.criar(agendamentoPara('2026-09-21T13:00:00Z')),
+        repositorio.criar(agendamentoPara(`${DIA_BASE}T13:00:00Z`)),
       ).rejects.toThrow('Profissional nao atende no dia selecionado.');
     });
   });
@@ -106,13 +128,13 @@ describe('AgendamentoRepository', () => {
       const { repositorio, prisma } = criarRepositorio();
       (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
         {
-          data: new Date('2026-09-21T13:00:00Z'),
+          data: new Date(`${DIA_BASE}T13:00:00Z`),
           servicos: [{ qtdeSlots: 1 }],
         },
       ]);
 
       await expect(
-        repositorio.criar(agendamentoPara('2026-09-21T13:00:00Z')),
+        repositorio.criar(agendamentoPara(`${DIA_BASE}T13:00:00Z`)),
       ).rejects.toThrow(
         'Este horario acabou de ser reservado por outro cliente. Escolha outro horario.',
       );
@@ -124,7 +146,7 @@ describe('AgendamentoRepository', () => {
       // Existente as 10:00, 1 slot de 15min -> ocupa 10:00-10:15.
       (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
         {
-          data: new Date('2026-09-21T13:00:00Z'), // 10:00 em Brasilia
+          data: new Date(`${DIA_BASE}T13:00:00Z`), // 10:00 em Brasilia
           servicos: [{ qtdeSlots: 1 }],
         },
       ]);
@@ -133,7 +155,7 @@ describe('AgendamentoRepository', () => {
         { qtdeSlots: 2 },
       ]);
 
-      const novo = agendamentoPara('2026-09-21T12:45:00Z'); // 09:45 em Brasilia
+      const novo = agendamentoPara(`${DIA_BASE}T12:45:00Z`); // 09:45 em Brasilia
       novo.servicos = [{ id: 1, qtdeSlots: 2 }] as any; // ocupa 09:45-10:15
 
       await expect(repositorio.criar(novo)).rejects.toThrow(
@@ -146,7 +168,7 @@ describe('AgendamentoRepository', () => {
       // Existente as 10:00, 1 slot de 15min -> ocupa 10:00-10:15.
       (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
         {
-          data: new Date('2026-09-21T13:00:00Z'),
+          data: new Date(`${DIA_BASE}T13:00:00Z`),
           servicos: [{ qtdeSlots: 1 }],
         },
       ]);
@@ -156,7 +178,7 @@ describe('AgendamentoRepository', () => {
         { qtdeSlots: 2 },
       ]);
 
-      const novo = agendamentoPara('2026-09-21T12:45:00Z'); // 09:45 em Brasilia
+      const novo = agendamentoPara(`${DIA_BASE}T12:45:00Z`); // 09:45 em Brasilia
       novo.servicos = [{ id: 1, qtdeSlots: 1 }] as any;
 
       await expect(repositorio.criar(novo)).rejects.toThrow(
@@ -168,12 +190,12 @@ describe('AgendamentoRepository', () => {
       const { repositorio, prisma } = criarRepositorio();
       (prisma.agendamento.findMany as jest.Mock).mockResolvedValue([
         {
-          data: new Date('2026-09-21T13:00:00Z'), // 10:00 em Brasilia
+          data: new Date(`${DIA_BASE}T13:00:00Z`), // 10:00 em Brasilia
           servicos: [{ qtdeSlots: 1 }],
         },
       ]);
 
-      const novo = agendamentoPara('2026-09-21T14:00:00Z'); // 11:00 em Brasilia
+      const novo = agendamentoPara(`${DIA_BASE}T14:00:00Z`); // 11:00 em Brasilia
       novo.servicos = [{ id: 1, qtdeSlots: 1 }] as any;
 
       await repositorio.criar(novo);
@@ -188,7 +210,7 @@ describe('AgendamentoRepository', () => {
 
       await repositorio.buscarPorProfissionalEData(
         1,
-        new Date('2026-09-20T12:00:00Z'),
+        new Date(`${DOMINGO_ANTERIOR}T12:00:00Z`),
       );
 
       expect(prisma.agendamento.findMany).toHaveBeenCalledWith(
