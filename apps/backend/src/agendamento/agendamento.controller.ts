@@ -354,7 +354,9 @@ export class AgendamentoController {
       }),
     ]);
 
-    const dataHora = new Date(agendamento.data).toLocaleString('pt-BR');
+    const dataHora = new Date(agendamento.data).toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+    });
     const qtdServicos = agendamento.servicos?.length ?? 0;
 
     await this.push.enviarParaTokens(
@@ -434,7 +436,9 @@ export class AgendamentoController {
       }),
     ]);
 
-    const dataHora = new Date(data).toLocaleString('pt-BR');
+    const dataHora = new Date(data).toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+    });
 
     await this.push.enviarParaTokens(
       [barbeiro?.pushToken],

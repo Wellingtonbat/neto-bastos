@@ -1,4 +1,5 @@
 'use client'
+import { useState } from 'react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,6 +11,7 @@ import {
 import { Usuario } from '@neto-bastos/core'
 import Image from 'next/image'
 import useUsuario from '@/data/hooks/useUsuario'
+import EditarPerfilModal from './EditarPerfilModal'
 
 export interface MenuUsuarioProps {
     usuario: Usuario
@@ -17,25 +19,31 @@ export interface MenuUsuarioProps {
 
 export default function MenuUsuario(props: MenuUsuarioProps) {
     const { sair } = useUsuario()
+    const [editandoPerfil, setEditandoPerfil] = useState(false)
 
     return props.usuario ? (
-        <DropdownMenu>
-            <DropdownMenuTrigger>
-                <div className="flex gap-2 items-center">
-                    <div className="flex flex-col items-end">
-                        <span className="text-lg font-bold leading-5">{props.usuario.nome}</span>
-                        <span className="text-xs text-zinc-400">{props.usuario.email}</span>
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger>
+                    <div className="flex gap-2 items-center">
+                        <div className="flex flex-col items-end">
+                            <span className="text-lg font-bold leading-5">{props.usuario.nome}</span>
+                            <span className="text-xs text-zinc-400">{props.usuario.email}</span>
+                        </div>
+                        <div className="flex justify-center items-center rounded-full overflow-hidden w-10 h-10 p-1 bg-zinc-700">
+                            <Image src="/avatar.png" width={40} height={40} alt={props.usuario.nome} />
+                        </div>
                     </div>
-                    <div className="flex justify-center items-center rounded-full overflow-hidden w-10 h-10 p-1 bg-zinc-700">
-                        <Image src="/avatar.png" width={40} height={40} alt={props.usuario.nome} />
-                    </div>
-                </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-                <DropdownMenuLabel>{props.usuario.nome}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={sair}>Sair</DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuLabel>{props.usuario.nome}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setEditandoPerfil(true)}>Editar perfil</DropdownMenuItem>
+                    <DropdownMenuItem onClick={sair}>Sair</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            {editandoPerfil ? <EditarPerfilModal aoFechar={() => setEditandoPerfil(false)} /> : null}
+        </>
     ) : null
 }

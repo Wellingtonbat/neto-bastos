@@ -10,12 +10,18 @@ import { navegarParaLogin } from '../navigation/navigationRef'
 
 const CHAVE_PERMISSAO_PUSH_SOLICITADA = 'push-permissao-solicitada'
 
+export interface DadosPerfil {
+    nome: string
+    telefone?: string
+}
+
 export interface ContextoUsuarioProps {
     carregando: boolean
     usuario: Usuario | null
     entrar: (usuario: Usuario) => Promise<void>
     sair: () => void
     limparSessao: () => void
+    atualizarMeuPerfil: (dados: DadosPerfil) => Promise<void>
 }
 
 const ContextoUsuario = createContext<ContextoUsuarioProps>({} as any)
@@ -100,6 +106,36 @@ export function ProvedorUsuario({ children }: any) {
         set('usuario', null)
     }
 
+    async function atualizarMeuPerfil(dados: DadosPerfil) {
+        if (!usuario?.token) {
+            throw new Error('Usuário não autenticado.')
+        }
+
+        const res = await fetch(`${URL_BASE}/auth/me`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${usuario.token}`,
+            },
+            body: JSON.stringify({ nome: dados.nome, telefone: dados.telefone }),
+        })
+
+        if (!res.ok) {
+            let mensagem = 'Não foi possível atualizar o perfil.'
+            try {
+                const erro = await res.json()
+                mensagem = Array.isArray(erro?.message) ? erro.message.join(', ') : (erro?.message ?? mensagem)
+            } catch {
+                // Mantem mensagem padrao quando resposta nao for JSON.
+            }
+            throw new Error(mensagem)
+        }
+
+        const atualizado = await res.json()
+        setUsuario(atualizado)
+        await set('usuario', atualizado)
+    }
+
     // Usado quando uma chamada autenticada volta 401 (token expirado/
     // invalido): limpa a sessao e leva o usuario de volta pra tela de
     // login, diferente de sair() porque precisa navegar explicitamente --
@@ -122,6 +158,7 @@ export function ProvedorUsuario({ children }: any) {
                 entrar,
                 sair,
                 limparSessao,
+                atualizarMeuPerfil,
             }}
         >
             {children}

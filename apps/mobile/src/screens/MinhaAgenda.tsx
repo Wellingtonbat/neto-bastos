@@ -14,6 +14,7 @@ import useUsuario from '../data/hooks/useUsuario'
 import { useFocusEffect } from '@react-navigation/native'
 import ClientesTab from '../components/perfil/ClientesTab'
 import FinalizarAtendimentoModal from '../components/perfil/FinalizarAtendimentoModal'
+import SeletorData from '../components/shared/SeletorData'
 
 type StatusAgendamento = 'PENDENTE' | 'CONFIRMADO' | 'CONCLUIDO' | 'CANCELADO'
 type Acao = 'ATUALIZAR_STATUS' | 'EXCLUIR_AGENDAMENTO' | null
@@ -55,6 +56,12 @@ export default function MinhaAgenda() {
     const [filtroStatus, setFiltroStatus] = useState<'TODOS' | StatusAgendamento>('TODOS')
     const [filtroProfissional, setFiltroProfissional] = useState<string>('todos')
     const [filtroData, setFiltroData] = useState<string>(dataYYYYMMDD(new Date()))
+
+    const datasRapidas = [
+        dataYYYYMMDD(new Date()),
+        dataYYYYMMDD(new Date(Date.now() + 86400000)),
+        '',
+    ]
 
     const [carregando, setCarregando] = useState(false)
     const [acao, setAcao] = useState<Acao>(null)
@@ -178,6 +185,16 @@ export default function MinhaAgenda() {
                             </Pressable>
                         )
                     })}
+                    <SeletorData
+                        valor={filtroData}
+                        aoAlterar={setFiltroData}
+                        ativo={!!filtroData && !datasRapidas.includes(filtroData)}
+                        label={
+                            filtroData && !datasRapidas.includes(filtroData)
+                                ? new Date(`${filtroData}T00:00:00`).toLocaleDateString('pt-BR')
+                                : 'Escolher data'
+                        }
+                    />
                 </ScrollView>
 
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtrosRow}>

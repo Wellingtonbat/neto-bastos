@@ -2,10 +2,12 @@ import { TelefoneUtils } from '@neto-bastos/core'
 import { StyleSheet, View, Image, Text, Pressable } from 'react-native'
 import useUsuario from '@/src/data/hooks/useUsuario'
 import React, { useState } from 'react'
+import EditarPerfilModal from './EditarPerfilModal'
 
 export default function Perfil({ navigation }: any) {
     const { usuario, sair } = useUsuario()
     const [menuAberto, setMenuAberto] = useState(false)
+    const [editandoPerfil, setEditandoPerfil] = useState(false)
 
     function handleSair() {
         sair()
@@ -34,11 +36,22 @@ export default function Perfil({ navigation }: any) {
                     <Text style={styles.texto}>
                         Telefone: {usuario?.telefone ? TelefoneUtils.formatar(usuario.telefone) : '-'}
                     </Text>
+                    <Pressable
+                        style={styles.botaoEditar}
+                        onPress={() => {
+                            setMenuAberto(false)
+                            setEditandoPerfil(true)
+                        }}
+                    >
+                        <Text style={styles.textoBotaoEditar}>Editar perfil</Text>
+                    </Pressable>
                     <Pressable style={styles.botao} onPress={handleSair}>
                         <Text style={styles.textoBotao}>SAIR</Text>
                     </Pressable>
                 </View>
             ) : null}
+
+            {editandoPerfil ? <EditarPerfilModal aoFechar={() => setEditandoPerfil(false)} /> : null}
         </View>
     )
 }
@@ -88,8 +101,23 @@ const styles = StyleSheet.create({
         padding: 12,
         backgroundColor: '#111827',
     },
-    botao: {
+    botaoEditar: {
         marginTop: 12,
+        height: 40,
+        paddingHorizontal: 14,
+        alignSelf: 'flex-start',
+        backgroundColor: '#27272a',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 8,
+    },
+    textoBotaoEditar: {
+        fontSize: 14,
+        color: '#e4e4e7',
+        fontWeight: 'bold',
+    },
+    botao: {
+        marginTop: 8,
         width: 110,
         height: 40,
         backgroundColor: '#EF4444',
