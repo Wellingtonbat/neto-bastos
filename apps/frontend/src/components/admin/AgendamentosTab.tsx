@@ -164,7 +164,7 @@ export default function AgendamentosTab(props: AgendamentosTabProps) {
                                 className="bg-zinc-900 border border-zinc-700 rounded p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
                             >
                                 <div>
-                                    <p className="font-semibold text-zinc-100">{ag.emailCliente}</p>
+                                    <p className="font-semibold text-zinc-100">{ag.nomeCliente ?? ag.emailCliente}</p>
                                     <p className="text-zinc-400 text-sm">
                                         {new Date(ag.data).toLocaleString('pt-BR')} - {ag.profissional?.nome}
                                     </p>
