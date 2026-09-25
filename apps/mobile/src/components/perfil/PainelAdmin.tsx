@@ -741,8 +741,12 @@ export default function PainelAdmin(props: PainelAdminProps) {
 
                 {agendamentos.map((agendamento) => (
                     <View key={agendamento.id} style={styles.card}>
-                        <Text style={styles.cardTitulo}>{agendamento.profissional?.nome ?? 'Sem barbeiro'}</Text>
-                        <Text style={styles.cardTexto}>Cliente: {agendamento.emailCliente}</Text>
+                        <Text style={styles.cardTitulo}>
+                            {agendamento.nomeCliente ?? agendamento.emailCliente}
+                        </Text>
+                        <Text style={styles.cardTexto}>
+                            Barbeiro: {agendamento.profissional?.nome ?? 'Sem barbeiro'}
+                        </Text>
                         <Text style={styles.cardTexto}>Data: {formatarDataHora(agendamento.data as any)}</Text>
                         <Text style={styles.cardTexto}>Status: {agendamento.status ?? 'PENDENTE'}</Text>
                         <Text style={styles.cardTexto}>

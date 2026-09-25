@@ -9,11 +9,13 @@ describe('AgendamentoController', () => {
     const repo = {
       buscarPorId: jest.fn(),
       atualizarStatus: jest.fn(),
+      buscarTodos: jest.fn(),
     } as unknown as AgendamentoRepository;
 
     const prisma = {
       usuario: {
         findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       profissional: {
         findUnique: jest.fn(),
@@ -297,6 +299,58 @@ describe('AgendamentoController', () => {
       await expect(controller.obterDadosPix(req, '999')).rejects.toThrow(
         'Agendamento não encontrado.',
       );
+    });
+  });
+
+  describe('buscarTodos', () => {
+    it('resolve o nome do cliente em lote e anexa em cada agendamento', async () => {
+      const { controller, repo, prisma } = criarController();
+      (repo.buscarTodos as jest.Mock).mockResolvedValue([
+        { id: 1, emailCliente: 'ana@teste.com' },
+        { id: 2, emailCliente: 'bruno@teste.com' },
+        { id: 3, emailCliente: 'ana@teste.com' },
+      ]);
+      (prisma.usuario.findMany as jest.Mock).mockResolvedValue([
+        { email: 'ana@teste.com', nome: 'Ana Silva' },
+        { email: 'bruno@teste.com', nome: 'Bruno Costa' },
+      ]);
+
+      const req = { user: { role: RoleUsuario.DONO, profissionalId: null } };
+      const resultado = await controller.buscarTodos(req);
+
+      expect(prisma.usuario.findMany).toHaveBeenCalledWith({
+        where: { email: { in: ['ana@teste.com', 'bruno@teste.com'] } },
+        select: { email: true, nome: true },
+      });
+      expect(resultado).toEqual([
+        { id: 1, emailCliente: 'ana@teste.com', nomeCliente: 'Ana Silva' },
+        { id: 2, emailCliente: 'bruno@teste.com', nomeCliente: 'Bruno Costa' },
+        { id: 3, emailCliente: 'ana@teste.com', nomeCliente: 'Ana Silva' },
+      ]);
+    });
+
+    it('nao quebra e nao consulta usuarios quando nao ha agendamentos', async () => {
+      const { controller, repo, prisma } = criarController();
+      (repo.buscarTodos as jest.Mock).mockResolvedValue([]);
+
+      const req = { user: { role: RoleUsuario.DONO, profissionalId: null } };
+      const resultado = await controller.buscarTodos(req);
+
+      expect(resultado).toEqual([]);
+      expect(prisma.usuario.findMany).not.toHaveBeenCalled();
+    });
+
+    it('deixa nomeCliente indefinido quando o e-mail nao pertence a nenhuma conta', async () => {
+      const { controller, repo, prisma } = criarController();
+      (repo.buscarTodos as jest.Mock).mockResolvedValue([
+        { id: 1, emailCliente: 'sememconta@teste.com' },
+      ]);
+      (prisma.usuario.findMany as jest.Mock).mockResolvedValue([]);
+
+      const req = { user: { role: RoleUsuario.DONO, profissionalId: null } };
+      const resultado = await controller.buscarTodos(req);
+
+      expect(resultado[0].nomeCliente).toBeUndefined();
     });
   });
 });

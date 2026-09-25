@@ -6,6 +6,7 @@ export type StatusAgendamento = "PENDENTE" | "CONFIRMADO" | "CONCLUIDO" | "CANCE
 export default interface Agendamento {
   id: number;
   emailCliente: string;
+  nomeCliente?: string;
   status?: StatusAgendamento;
   data: Date;
   profissional: Profissional;

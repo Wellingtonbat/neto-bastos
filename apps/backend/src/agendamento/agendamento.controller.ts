@@ -78,7 +78,7 @@ export class AgendamentoController {
   @Get()
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleUsuario.DONO, RoleUsuario.BARBEIRO, RoleUsuario.FUNCIONARIO)
-  buscarTodos(
+  async buscarTodos(
     @Req() req: any,
     @Query('profissionalId') profissionalId?: string,
     @Query('status') status?: StatusAgendamento,
@@ -90,20 +90,50 @@ export class AgendamentoController {
     };
     const data = dataParam ? parseDataBrasilia(dataParam) : undefined;
 
+    let agendamentos;
     if (user.role === RoleUsuario.BARBEIRO) {
       if (!user.profissionalId) {
         throw new ForbiddenException(
           'Barbeiro sem vínculo de profissional não pode acessar a agenda.',
         );
       }
-      return this.repo.buscarTodos(user.profissionalId, status, data);
+      agendamentos = await this.repo.buscarTodos(
+        user.profissionalId,
+        status,
+        data,
+      );
+    } else {
+      agendamentos = await this.repo.buscarTodos(
+        profissionalId ? +profissionalId : undefined,
+        status,
+        data,
+      );
     }
 
-    return this.repo.buscarTodos(
-      profissionalId ? +profissionalId : undefined,
-      status,
-      data,
-    );
+    return this.enriquecerComNomeCliente(agendamentos);
+  }
+
+  // A agenda de um profissional exibe quem é o cliente com mais destaque
+  // que o próprio profissional (que já é conhecido por quem está olhando a
+  // própria agenda) -- mas Agendamento só guarda emailCliente, sem relação
+  // com Usuario. Resolve o nome de exibição num único select em lote (não
+  // N+1) em vez de um por agendamento.
+  private async enriquecerComNomeCliente<T extends { emailCliente: string }>(
+    agendamentos: T[],
+  ): Promise<Array<T & { nomeCliente?: string }>> {
+    const emails = [...new Set(agendamentos.map((a) => a.emailCliente))];
+    if (emails.length === 0) return agendamentos;
+
+    const clientes = await this.prisma.usuario.findMany({
+      where: { email: { in: emails } },
+      select: { email: true, nome: true },
+    });
+    const nomePorEmail = new Map(clientes.map((c) => [c.email, c.nome]));
+
+    return agendamentos.map((a) => ({
+      ...a,
+      nomeCliente: nomePorEmail.get(a.emailCliente),
+    }));
   }
 
   @Get('ocupacao/:profissional/:data')
