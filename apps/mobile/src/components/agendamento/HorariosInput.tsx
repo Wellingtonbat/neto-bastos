@@ -62,8 +62,10 @@ export default function HorariosInput(props: HorariosInputProps) {
         const selecionado =
             periodoSelecionado.length === props.qtdeHorarios && periodoSelecionado.includes(horario)
 
-        const periodoTemReservaOcupada = periodo.some((h) => horariosOcupados.includes(h))
-        const periodoTemHorarioPassado = periodo.some((h) => jaPassou(h))
+        const periodoTemReservaOcupada =
+            periodo.includes(horario) && periodo.some((h) => horariosOcupados.includes(h))
+        const periodoTemHorarioPassado =
+            periodo.includes(horario) && periodo.some((h) => jaPassou(h))
 
         const ocupadoPorReserva = horariosOcupados.includes(horario) || periodoTemReservaOcupada
         const indisponivel =
