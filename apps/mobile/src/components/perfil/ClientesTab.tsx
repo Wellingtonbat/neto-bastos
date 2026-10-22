@@ -62,6 +62,8 @@ export default function ClientesTab(props: ClientesTabProps) {
         selecionarServicos,
         selecionarData,
         quantidadeDeSlots,
+        duracaoTotal,
+        precoTotal,
         agendar,
     } = useAgendamento()
 
@@ -160,11 +162,13 @@ export default function ClientesTab(props: ClientesTabProps) {
             setPermiteProximoPasso(false)
             return
         }
+        // So atualiza o estado aqui -- o agendamento em si so acontece quando
+        // o usuario confirma no resumo abaixo. Chamar agendar() direto daqui
+        // usaria o `data` ainda desatualizado (setData e assincrono), e
+        // tambem pularia a confirmacao que o usuario deveria ver antes de
+        // criar o agendamento de verdade.
         const horaValida = d.getHours() >= 8 && d.getHours() <= 21
         setPermiteProximoPasso(horaValida)
-        if (horaValida) {
-            confirmarAgendamento()
-        }
     }
 
     async function confirmarAgendamento() {
@@ -369,10 +373,34 @@ export default function ClientesTab(props: ClientesTabProps) {
                             carregandoHorarios={carregandoHorarios}
                         />
                     </Passos>
-                    {agendando ? (
-                        <View style={styles.loadingContainer}>
-                            <ActivityIndicator color="#22c55e" />
-                            <Text style={styles.loadingTexto}>Criando agendamento...</Text>
+                    {profissional && servicos.length > 0 && data ? (
+                        <View style={styles.resumo}>
+                            <Text style={styles.resumoTitulo}>Confirmar agendamento</Text>
+                            <Text style={styles.resumoTexto}>Profissional: {profissional.nome}</Text>
+                            <Text style={styles.resumoTexto}>
+                                Serviços: {servicos.map((s) => s.nome).join(', ')}
+                            </Text>
+                            <Text style={styles.resumoTexto}>Duração: {duracaoTotal()}</Text>
+                            <Text style={styles.resumoTexto}>
+                                Horário: {data.toLocaleString('pt-BR')}
+                            </Text>
+                            <Text style={styles.resumoTexto}>
+                                Valor: {precoTotal().toLocaleString('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL',
+                                })}
+                            </Text>
+                            <Pressable
+                                style={[styles.botaoPrimario, agendando ? styles.botaoDesabilitado : null]}
+                                onPress={confirmarAgendamento}
+                                disabled={agendando}
+                            >
+                                {agendando ? (
+                                    <ActivityIndicator color="#0b0f14" />
+                                ) : (
+                                    <Text style={styles.botaoPrimarioTexto}>Confirmar agendamento</Text>
+                                )}
+                            </Pressable>
                         </View>
                     ) : null}
 
@@ -581,14 +609,27 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontWeight: '700',
     },
-    loadingContainer: {
-        alignItems: 'center',
-        gap: 6,
-        marginTop: 10,
+    resumo: {
+        backgroundColor: '#18181b',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#27272a',
+        padding: 14,
+        gap: 4,
+        marginTop: 4,
     },
-    loadingTexto: {
-        color: '#a1a1aa',
-        fontSize: 12,
+    resumoTitulo: {
+        color: '#f4f4f5',
+        fontSize: 14,
+        fontWeight: '700',
+        marginBottom: 4,
+    },
+    resumoTexto: {
+        color: '#d4d4d8',
+        fontSize: 13,
+    },
+    botaoDesabilitado: {
+        opacity: 0.6,
     },
     itemSerie: {
         borderWidth: 1,
